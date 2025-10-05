@@ -367,76 +367,70 @@
       'Prefer': 'return=minimal',
     };
     
-    const recordsToSync = [];
-    const itemIdsToUpdate = [];
-    
-    for (const item of unsynced) {
-      const d = item.data;
-      const equipmentUsed = Object.keys(d.equipmentUsed || {})
-          .filter(key => d.equipmentUsed[key].used)
-          .map(key => EQUIPMENT_LIST.find(e => e.id === key)?.name)
-          .filter(Boolean);
+    let successCount = 0;
 
-      const notes = `${d.generalNotes || ''}
+    for (const item of unsynced) {
+        if (!item.id) continue;
+        
+        const d = item.data;
+        const equipmentUsed = Object.keys(d.equipmentUsed || {})
+            .filter(key => d.equipmentUsed[key].used)
+            .map(key => EQUIPMENT_LIST.find(e => e.id === key)?.name)
+            .filter(Boolean);
+        const notes = `${d.generalNotes || ''}
 ${d.plantEnvironmentNotes || ''}
 ${equipmentUsed.length > 0 ? 'المعدات المستخدمة: ' + equipmentUsed.join(', ') : ''}`.trim();
 
-      const record = {
-          user_id: d.userId,
-          barcode_id: d.barcodeId,
-          plant_id: d.plantId,
-          plant_type: d.plantName,
-          scientific_name: d.scientificName,
-          quantity: d.quantity ? parseFloat(d.quantity) : null,
-          unit: d.unit,
-          quality: d.qualityLevel,
-          collection_date: d.collectionDate,
-          collection_time: d.collectionTime,
-          location: d.locationName,
-          gps_coordinates: d.gpsCoordinates,
-          temperature: d.temperature ? parseFloat(d.temperature) : null,
-          weather_condition: d.weatherCondition,
-          collector: d.collectorName,
-          team: d.team,
-          collection_method: d.collectionMethod,
-          seed_maturity: d.seedMaturity,
-          notes: notes,
-          status: 'قيد المعالجة',
-      };
-      recordsToSync.push(record);
-      if(item.id) itemIdsToUpdate.push(item.id);
+        const record = {
+            user_id: d.userId, barcode_id: d.barcodeId, plant_id: d.plantId,
+            plant_type: d.plantName, scientific_name: d.scientificName,
+            quantity: d.quantity ? parseFloat(d.quantity) : null, unit: d.unit,
+            quality: d.qualityLevel, collection_date: d.collectionDate,
+            collection_time: d.collectionTime, location: d.locationName,
+            gps_coordinates: d.gpsCoordinates,
+            temperature: d.temperature ? parseFloat(d.temperature) : null,
+            weather_condition: d.weatherCondition, collector: d.collectorName,
+            team: d.team, collection_method: d.collectionMethod,
+            seed_maturity: d.seedMaturity, notes: notes, status: 'قيد المعالجة',
+        };
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(record), // Send one record at a time
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Supabase sync error for item ' + item.id + ':', errorText);
+                // Continue to the next item
+            } else {
+                await db.offlineCollections.update(item.id, { synced: true });
+                successCount++;
+            }
+        } catch (e) {
+            console.error("Network error during sync for item " + item.id + ":", e);
+            // Break the loop on network error, will retry later
+            break;
+        }
     }
 
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(recordsToSync),
-      });
-
-      if (!response.ok) {
-         const errorText = await response.text();
-         console.error('Supabase batch sync error:', errorText);
-         throw new Error(`Failed to sync with status: ${response.status}`);
+    lastSync = new Date();
+    if (unsynced.length > 0) {
+      if (successCount === unsynced.length) {
+          setStatusMessage(`تمت مزامنة ${successCount} من ${unsynced.length} سجل بنجاح!`, 'success');
+      } else if (successCount > 0) {
+          setStatusMessage(`تمت مزامنة ${successCount} من ${unsynced.length} سجل. بعض السجلات فشلت.`, 'warning');
+      } else {
+          setStatusMessage('فشل المزامنة مع Supabase. سيتم المحاولة لاحقاً.', 'error');
       }
-      
-      for (const id of itemIdsToUpdate) {
-        await db.offlineCollections.update(id, { synced: true });
-      }
-
-      lastSync = new Date();
-      if (unsynced.length > 0) {
-        setStatusMessage(`تمت مزامنة ${itemIdsToUpdate.length} من ${unsynced.length} سجل بنجاح!`, 'success');
-      }
-    } catch (e) {
-      console.error("Error during Supabase sync:", e);
-      setStatusMessage('فشل المزامنة مع Supabase. سيتم المحاولة لاحقاً.', 'error');
-    } finally {
-      isSyncing = false;
-      await updatePendingCount();
-      await renderLocalRecords();
-      updateSyncUI();
     }
+
+    isSyncing = false;
+    await updatePendingCount();
+    await renderLocalRecords();
+    updateSyncUI();
   }
   
   function updateSyncUI() {
