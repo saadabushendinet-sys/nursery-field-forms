@@ -2,550 +2,397 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8">
-  <title>نموذج جمع ميداني</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
-  <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
-  <style>
-    :root {
-      --color-bg: #f3f4f6; --color-surface: #ffffff; --color-text: #1f2937;
-      --color-text-muted: #6b7280; --color-border: #e5e7eb; --color-primary: #3b82f6;
-      --color-primary-hover: #2563eb; --color-green: #16a34a; --color-red: #dc2626;
-      --color-yellow: #f59e0b;
-    }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background-color: var(--color-bg); color: var(--color-text);
-      margin: 0; padding: 1rem;
-    }
-    .container { max-width: 56rem; margin: auto; }
-    .card { background-color: var(--color-surface); border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); }
-    .p-6 { padding: 1.5rem; }
-    .mb-6 { margin-bottom: 1.5rem; }
-    h1 { font-size: 1.5rem; line-height: 2rem; font-weight: 700; }
-    h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; }
-    p { color: var(--color-text-muted); }
-    .grid { display: grid; gap: 1rem; }
-    .grid-cols-1 { grid-template-columns: 1fr; }
-    .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .col-span-2 { grid-column: span 2 / span 2; }
-    label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; }
-    input[type="text"], input[type="number"], input[type="date"], input[type="time"], select, textarea {
-      width: 100%; box-sizing: border-box; background-color: #f9fafb;
-      border: 1px solid var(--color-border); border-radius: 0.5rem;
-      padding: 0.625rem; font-size: 0.875rem;
-    }
-    input[readonly] { background-color: #e5e7eb; cursor: not-allowed; }
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-      padding: 0.625rem 1rem; font-size: 0.875rem; font-weight: 500;
-      border-radius: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: background-color 0.2s;
-    }
-    .btn-primary { background-color: var(--color-primary); color: white; }
-    .btn-primary:hover { background-color: var(--color-primary-hover); }
-    .btn-green { background-color: var(--color-green); color: white; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .flex { display: flex; }
-    .items-center { align-items: center; }
-    .justify-between { justify-content: space-between; }
-    .justify-end { justify-content: flex-end; }
-    .gap-2 { gap: 0.5rem; } .gap-4 { gap: 1rem; }
-    .hidden { display: none; }
-    .w-4 { width: 1rem; } .h-4 { height: 1rem; }
-    .w-6 { width: 1.5rem; } .h-6 { height: 1.5rem; }
-    .animate-spin { animation: spin 1s linear infinite; }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    .text-green { color: var(--color-green); } .text-red { color: var(--color-red); } .text-yellow { color: var(--color-yellow); }
-    .bg-green-light { background-color: #dcfce7; } .text-green-dark { color: #166534; }
-    .bg-yellow-light { background-color: #fef9c3; } .text-yellow-dark { color: #854d0e; }
-    .font-semibold { font-weight: 600; }
-    fieldset { border: none; border-top: 1px solid var(--color-border); padding: 1.5rem 0 0 0; margin-top: 1.5rem; }
-    legend { font-size: 1.125rem; font-weight: 600; padding: 0 0.5rem; margin-right: -0.5rem; }
-    .local-record-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 0.5rem; }
-    .local-record-item + .local-record-item { margin-top: 0.75rem; }
-    .status-badge { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
-    .status-badge svg { width: 0.875rem; height: 0.875rem; }
-    @media (min-width: 768px) {
-      .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .md\:col-span-2 { grid-column: span 2 / span 2; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نموذج جمع ميداني</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/dexie@4.0.7/dist/dexie.js"></script>
+    <script src="https://unpkg.com/pako@2.1.0/dist/pako.min.js"></script>
+    <style>
+      .loader { border-top-color: #3498db; animation: spin 1s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      [hidden] { display: none !important; }
+    </style>
 </head>
-<body>
-<div class="container">
-  <div id="form-container">
-    <div id="sync-status-header" class="card mb-6"></div>
+<body class="bg-gray-100">
 
-    <div class="card mb-6">
-      <div id="local-records-toggle" style="padding: 1.5rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin: 0; font-size: 1.25rem; font-weight: 600;">السجلات المحفوظة محلياً</h2>
-        <svg id="records-chevron" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s;"><path d="m6 9 6 6 6-6"/></svg>
+    <div id="app" class="max-w-3xl mx-auto p-4 md:p-6 space-y-6">
+      
+      <!-- Error Display -->
+      <div id="error-container" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert" hidden>
+        <strong class="font-bold">خطأ!</strong>
+        <span class="block sm:inline" id="error-message"></span>
       </div>
-      <div id="local-records-container" style="padding: 0 1.5rem 1.5rem; display: none; border-top: 1px solid var(--color-border);">
-          <div id="local-records-list" style="padding-top: 1.5rem;">
-              <p style="text-align: center; color: var(--color-text-muted); padding: 1rem 0;">جاري تحميل السجلات...</p>
-          </div>
-      </div>
-    </div>
-    
-    <div class="card p-6">
-      <h1>نموذج جمع ميداني</h1>
-      <p class="mb-6">قم بتعبئة الحقول التالية ثم اضغط على "حفظ البيانات" لحفظ المعلومات محلياً.</p>
-      <form id="collectionForm">
-        <fieldset>
-          <legend>1. المعلومات الأساسية</legend>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label>رقم الباركود</label><input type="text" id="barcodeId" readonly></div>
-            <div><label>نوع النبات</label><input type="text" id="plantName" readonly></div>
-            <div><label>الاسم العلمي</label><input type="text" id="scientificName" readonly></div>
-            <div><label>تم إنشاؤه بواسطة</label><input type="text" id="userEmail" readonly></div>
-          </div>
-        </fieldset>
 
-        <fieldset>
-            <legend>2. تفاصيل الجمع</legend>
+      <!-- Main Content (hidden until data is loaded) -->
+      <div id="main-content" hidden>
+        <!-- Sync Status Header -->
+        <div id="sync-status" class="flex items-center justify-between p-3 mb-4 rounded-lg text-sm">
+            <div class="flex items-center gap-2">
+                <div id="sync-icon"></div>
+                <span id="sync-text" class="font-medium"></span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span id="pending-count-container" class="flex items-center gap-1.5" hidden>
+                <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                <span><span id="pending-count">0</span> قيد المزامنة</span>
+              </span>
+              <button id="sync-button" class="px-3 py-1.5 text-xs font-semibold rounded-md flex items-center gap-1.5">
+                  <i id="sync-button-icon" data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                  <span id="sync-button-text">مزامنة</span>
+              </button>
+            </div>
+        </div>
+
+        <!-- Form Header -->
+        <header class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">نموذج جمع ميداني</h1>
+                    <p class="text-gray-500">الرجاء تعبئة البيانات التالية بدقة.</p>
+                </div>
+                <i data-lucide="leaf" class="w-10 h-10 text-green-500"></i>
+            </div>
+            <div id="plant-info" class="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                <!-- Plant info will be rendered here by JS -->
+            </div>
+        </header>
+
+        <!-- Success Message -->
+        <div id="success-message" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert" hidden>
+          <strong class="font-bold">تم بنجاح!</strong>
+          <span class="block sm:inline">تم حفظ بيانات الجمع محلياً. ستتم المزامنة عند توفر اتصال بالإنترنت.</span>
+        </div>
+
+        <!-- Collection Form -->
+        <form id="collection-form" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-6">
+            <!-- Form fields will be here, matching the Angular form -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-medium">الكمية</label>
+                <input name="quantity" type="number" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+              </div>
+              <div>
+                  <label class="block text-sm font-medium">الوحدة</label>
+                  <select name="unit" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                      <option>كيلو</option>
+                      <option>جرام</option>
+                      <option>وحدة</option>
+                  </select>
+              </div>
+              <div>
+                  <label class="block text-sm font-medium">مستوى الجودة</label>
+                  <select name="qualityLevel" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                      <option>ممتاز</option>
+                      <option>جيد</option>
+                      <option>متوسط</option>
+                      <option>ضعيف</option>
+                  </select>
+              </div>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label for="quantity">الكمية *</label>
-                    <div class="flex"><input id="quantity" name="quantity" type="number" value="1" min="0.01" step="0.01" required><select name="unit"><option value="kg">كيلو</option><option value="g">جرام</option></select></div>
+                    <label class="block text-sm font-medium">اسم الموقع</label>
+                    <input name="locationName" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
                 </div>
-                <div>
-                    <label for="qualityLevel">الجودة *</label>
-                    <select id="qualityLevel" name="qualityLevel" required><option>ممتاز</option><option>جيد جداً</option><option>جيد</option><option>متوسط</option><option>ضعيف</option></select>
-                </div>
-                <div><label for="collectionDate">تاريخ الجمع *</label><input id="collectionDate" name="collectionDate" type="date" required></div>
-                <div><label for="collectionTime">وقت الجمع *</label><input id="collectionTime" name="collectionTime" type="time" required></div>
-            </div>
-          </fieldset>
-        
-          <fieldset>
-              <legend>3. معلومات الموقع</legend>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label for="locationName">اسم الموقع *</label>
-                  <input id="locationName" name="locationName" type="text" required>
-                </div>
-                <div>
-                  <label for="gpsCoordinates">الإحداثيات (GPS)</label>
-                  <div class="flex items-center gap-2">
-                    <input id="gpsCoordinates" name="gpsCoordinates" type="text" placeholder="46.6753_24.7136">
-                    <button type="button" id="getLocationBtn" class="btn btn-primary" style="flex-shrink: 0;">
-                      <span id="location-icon-wrapper"></span>
-                      <span>الموقع</span>
+                <div class="relative">
+                    <label class="block text-sm font-medium">الإحداثيات (GPS)</label>
+                    <input name="gpsCoordinates" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                    <button type="button" id="get-location-btn" class="absolute top-7 left-1 p-1.5 text-gray-500 hover:text-blue-600">
+                        <i data-lucide="map-pin" class="w-5 h-5"></i>
                     </button>
-                  </div>
                 </div>
-                <div><label for="temperature">درجة الحرارة (مْ)</label><input id="temperature" name="temperature" type="number" step="any"></div>
-                <div>
-                  <label for="weatherCondition">حالة الطقس</label>
-                  <select id="weatherCondition" name="weatherCondition">
-                    <option>صافٍ</option><option>مشمس</option><option>غائم جزئياً</option><option>غائم</option><option>ضباب</option><option>مطر خفيف</option><option>مطر</option><option>مطر غزير</option><option>عاصفة رعدية</option><option>ثلج</option><option>مغبر</option>
-                  </select>
-                </div>
-              </div>
-          </fieldset>
-
-          <fieldset>
-              <legend>4. فريق العمل والمعدات</legend>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label for="collectorName">اسم الجامع *</label><input id="collectorName" name="collectorName" type="text" required></div>
-                <div><label for="team">الفريق</label><input id="team" name="team" type="text"></div>
-                <div><label for="collectionMethod">طريقة الجمع</label><input id="collectionMethod" name="collectionMethod" type="text"></div>
-                <div><label for="seedMaturity">نضج البذور</label><input id="seedMaturity" name="seedMaturity" type="text"></div>
-                <div class="md:col-span-2">
-                  <label class="block text-sm font-medium mb-2">المعدات المستخدمة</label>
-                  <div id="equipment-list" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
-                </div>
-              </div>
-          </fieldset>
-
-          <fieldset>
-              <legend>5. الملاحظات</legend>
-              <div class="grid grid-cols-1 gap-4">
-                <div><label for="generalNotes">ملاحظات عامة</label><textarea id="generalNotes" name="generalNotes" rows="3"></textarea></div>
-                <div><label for="plantEnvironmentNotes">ملاحظات حول النبات والبيئة</label><textarea id="plantEnvironmentNotes" name="plantEnvironmentNotes" rows="3"></textarea></div>
-              </div>
-          </fieldset>
-
-        <div class="flex justify-end items-center gap-4" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--color-border);">
-          <div id="save-success-msg" class="hidden flex items-center gap-2 text-green font-semibold">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            <span>تم الحفظ محلياً بنجاح!</span>
-          </div>
-          <button type="submit" id="saveBtn" class="btn btn-green">حفظ البيانات للعمل الميداني</button>
-        </div>
-      </form>
-    </div>
-  </div>
-  <div id="error-container" class="hidden card p-6 text-center" style="text-align: center;">
-      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: auto; margin-bottom: 1rem;" class="text-red"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-      <h1 style="margin-bottom: 0.5rem;">خطأ</h1>
-      <p id="error-message"></p>
-  </div>
-</div>
-
-<script>
-  // --- INJECTED DATA ---
-  const encodedData = 'eJw1zT1uwkAQhuG7bJ1Bs9kde50KgShoKLjB7O4YVvIPsg0Noo0ijpIyp8G3iWM57Tzz6rsrz11oo%2Byj%2BlCb4xZ0TgXl5NBoS%2BpNXSpuhlmdJ2tYI5TGebDOBnAFCmBWEiNqh5b%2FgwPXMiWvn%2FH5%2Bh6%2Fxs8J%2BpCkGVKZwqJtlW4ywbWXbl4onEXKOIN3bSLYwBo8lwKkAwbjSXIXl%2F9dzamakp45rthf%2B7M0Ma1Pf%2BdVaGv1%2BAVXDUSg';
-  const supabaseUrl = 'https://taodxqtlkyhkupktliwv.supabase.co';
-  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhb2R4cXRsa3loa3Vwa3RsaXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDkxMjUsImV4cCI6MjA3NDY4NTEyNX0.3_Lolpx49GZJAai8I5qQRHpD8fXnuOGKJKEhHmXH9Ps';
-
-  // --- CONFIG ---
-  const EQUIPMENT_LIST = [
-    { id: 'collection_bags', name: 'أكياس جمع' }, { id: 'pruning_shears', name: 'مقص تقليم' },
-    { id: 'ladder', name: 'سلم' }, { id: 'collection_nets', name: 'شباك جمع' },
-    { id: 'gloves', name: 'قفازات' }, { id: 'storage_boxes', name: 'صناديق تخزين' },
-  ];
-
-  // --- SVG ICONS ---
-  const ICONS = {
-    wifi: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-green"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" x2="12.01" y1="20" y2="20"/></svg>',
-    wifiOff: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-red"><line x1="1" x2="23" y1="1" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a11 11 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a16 16 0 0 1 4.71-2.64"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" x2="12.01" y1="20" y2="20"/></svg>',
-    spinner: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 animate-spin"><line x1="12" x2="12" y1="2" y2="6"/><line x1="12" x2="12" y1="18" y2="22"/><line x1="4.93" x2="7.76" y1="4.93" y2="7.76"/><line x1="16.24" x2="19.07" y1="16.24" y2="19.07"/><line x1="2" x2="6" y1="12" y2="12"/><line x1="18" x2="22" y1="12" y2="12"/><line x1="4.93" x2="7.76" y1="19.07" y2="16.24"/><line x1="16.24" x2="19.07" y1="7.76" y2="4.93"/></svg>',
-    refresh: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M3 2v6h6"/><path d="M21 12A9 9 0 0 0 6 5.3L3 8"/><path d="M21 22v-6h-6"/><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"/></svg>',
-    mapPin: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
-    synced: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
-    pending: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>',
-  };
-
-  // --- GLOBAL STATE ---
-  let isOnline = navigator.onLine;
-  let isSyncing = false;
-  let pendingCount = 0;
-  let lastSync = null;
-  let baseData = null;
-  let db;
-
-  // --- UI ELEMENTS ---
-  let form, formContainer, errorContainer, errorMessage, syncHeader, saveSuccessMsg, getLocationBtn, locationIconWrapper, recordsToggle, recordsContainer, recordsChevron;
-
-  function showError(message) {
-      formContainer.classList.add('hidden');
-      errorContainer.classList.remove('hidden');
-      errorMessage.textContent = message;
-  }
-
-  function decodeData(encodedString) {
-    const base64String = decodeURIComponent(encodedString);
-    const binaryString = atob(base64String);
-    const compressed = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-        compressed[i] = binaryString.charCodeAt(i);
-    }
-    const jsonString = pako.inflate(compressed, { to: 'string' });
-    return JSON.parse(jsonString);
-  }
-
-  async function updatePendingCount() {
-    pendingCount = await db.offlineCollections.where('synced').equals(0).count();
-    updateSyncUI();
-  }
-  
-  async function renderLocalRecords() {
-    const listContainer = document.getElementById('local-records-list');
-    if (!listContainer) return;
-    listContainer.innerHTML = '<p>جاري تحميل السجلات...</p>';
-
-    try {
-      const records = await db.offlineCollections.orderBy('id').reverse().toArray();
-      if (records.length === 0) {
-        listContainer.innerHTML = '<p style="text-align: center; color: var(--color-text-muted); padding: 1rem 0;">لا توجد سجلات محفوظة محلياً.</p>';
-        return;
-      }
-
-      listContainer.innerHTML = records.map(function(record) {
-        const d = record.data;
-        const statusIcon = record.synced ? ICONS.synced : ICONS.pending;
-        const statusText = record.synced ? 'تمت المزامنة' : 'بانتظار المزامنة';
-        const statusBadgeClass = record.synced ? 'bg-green-light text-green-dark' : 'bg-yellow-light text-yellow-dark';
-
-        return (
-          '<div class="local-record-item">' +
-            '<div>' +
-              '<p class="font-semibold">' + (d.plantName || 'N/A') + '</p>' +
-              '<p style="font-size: 0.75rem; color: var(--color-text-muted);">' + (d.collectionDate || 'N/A') + ' - ' + (d.quantity || 'N/A') + ' ' + (d.unit || '') + '</p>' +
-            '</div>' +
-            '<div class="status-badge ' + statusBadgeClass + '">' +
-              statusIcon + '<span>' + statusText + '</span>' +
-            '</div>' +
-          '</div>'
-        );
-      }).join('');
-
-    } catch (e) {
-      console.error('Failed to render local records:', e);
-      listContainer.innerHTML = '<p class="text-red">فشل تحميل السجلات المحفوظة.</p>';
-    }
-  }
-
-
-  async function syncPendingCollections() {
-    if (!isOnline || isSyncing) return;
-
-    isSyncing = true;
-    updateSyncUI();
-    const unsynced = await db.offlineCollections.where('synced').equals(0).toArray();
-
-    if (unsynced.length === 0) {
-      isSyncing = false;
-      lastSync = new Date();
-      updateSyncUI();
-      renderLocalRecords(); // Refresh list to show all synced
-      return;
-    }
-
-    for (const item of unsynced) {
-      const d = item.data;
-      const record = {
-        user_id: d.userId, // Link to the user
-        barcode_id: d.barcodeId, plant_id: d.plantId, plant_type: d.plantName, scientific_name: d.scientificName,
-        quantity: d.quantity ? parseFloat(d.quantity) : null, 
-        unit: d.unit, 
-        quality: d.qualityLevel, 
-        collection_date: d.collectionDate,
-        collection_time: d.collectionTime, 
-        location: d.locationName, 
-        gps_coordinates: d.gpsCoordinates, 
-        temperature: d.temperature ? parseFloat(d.temperature) : null, 
-        weather_condition: d.weatherCondition, 
-        collector: d.collectorName,
-        team: d.team, 
-        collection_method: d.collectionMethod, 
-        seed_maturity: d.seedMaturity,
-        notes: ((d.generalNotes || '') + '\n' + (d.plantEnvironmentNotes || '')).trim(),
-        status: 'قيد المعالجة',
-      };
-      
-      try {
-        const response = await fetch(supabaseUrl + '/rest/v1/seed_collections', {
-          method: 'POST',
-          headers: { 
-            'apikey': supabaseAnonKey, 
-            'Authorization': 'Bearer ' + supabaseAnonKey, 
-            'Content-Type': 'application/json' 
-          },
-          body: JSON.stringify(record)
-        });
-        if (response.ok) {
-           if(item.id) await db.offlineCollections.update(item.id, { synced: true });
-        } else {
-           console.error('Sync error for item ' + item.id + ':', await response.json());
-        }
-      } catch (e) {
-        console.error('Network error during sync:', e);
-        break; // Stop syncing on network error
-      }
-    }
-    
-    isSyncing = false;
-    lastSync = new Date();
-    await updatePendingCount();
-    await renderLocalRecords();
-  }
-  
-  function updateSyncUI() {
-    const onlineIcon = isOnline ? ICONS.wifi : ICONS.wifiOff;
-    const onlineText = isOnline ? 'متصل بالإنترنت' : 'غير متصل بالإنترنت';
-    const onlineSubtext = isOnline ? 'المزامنة التلقائية مفعلة.' : 'سيتم حفظ البيانات محلياً.';
-    const onlineColor = isOnline ? 'text-green' : 'text-red';
-    
-    const syncButtonContent = isSyncing ? ICONS.spinner + '<span>جاري المزامنة...</span>' : ICONS.refresh + '<span>مزامنة الآن</span>';
-
-    syncHeader.innerHTML = 
-      '<div class="flex justify-between items-center gap-4" style="flex-wrap: wrap;">' +
-        '<div class="flex items-center gap-2">' +
-          onlineIcon +
-          '<div>' +
-            '<p class="font-semibold ' + onlineColor + '">' + onlineText + '</p>' +
-            '<p style="font-size: 0.75rem; color: var(--color-text-muted);">' + onlineSubtext + '</p>' +
-          '</div>' +
-        '</div>' +
-        '<div style="text-align: center;"><p class="font-semibold">' + pendingCount + '</p><p style="font-size: 0.75rem; color: var(--color-text-muted);">بانتظار المزامنة</p></div>' +
-        '<div style="text-align: center;"><p class="font-semibold">' + (lastSync ? lastSync.toLocaleTimeString('ar-EG') : 'لم تتم') + '</p><p style="font-size: 0.75rem; color: var(--color-text-muted);">آخر مزامنة</p></div>' +
-        '<button id="syncNowBtn" ' + (!isOnline || isSyncing ? 'disabled' : '') + ' class="btn btn-primary">' + syncButtonContent + '</button>' +
-      '</div>';
-    
-    syncHeader.style.borderLeft = '4px solid ' + (isOnline ? 'var(--color-green)' : 'var(--color-red)');
-    document.getElementById('syncNowBtn').addEventListener('click', syncPendingCollections);
-  }
-
-  async function handleFormSubmit(event) {
-    event.preventDefault();
-    if (!form.checkValidity()) {
-        alert('الرجاء تعبئة جميع الحقول المطلوبة.');
-        return;
-    }
-    
-    const formData = new FormData(form);
-    const dataToSave = { ...baseData, collectedAt: new Date().toISOString() };
-    for (const [key, value] of formData.entries()) { dataToSave[key] = value; }
-
-    const equipmentUsed = [];
-    document.querySelectorAll('#equipment-list input[type="checkbox"]').forEach(function(checkbox) {
-      if (checkbox.checked) {
-        equipmentUsed.push(checkbox.name);
-      }
-    });
-    dataToSave['equipmentUsed'] = equipmentUsed;
-
-    try {
-      await db.offlineCollections.add({ data: dataToSave, synced: false });
-      saveSuccessMsg.classList.remove('hidden');
-      form.reset();
-      // Reset defaults
-      document.getElementById('collectionDate').value = new Date().toISOString().split('T')[0];
-      document.getElementById('collectionTime').value = new Date().toTimeString().split(' ')[0].substring(0,5);
-      document.getElementById('quantity').value = '1';
-      document.getElementById('unit').value = 'kg';
-
-      await updatePendingCount();
-      await renderLocalRecords();
-      setTimeout(function() { saveSuccessMsg.classList.add('hidden') }, 3000);
-      if (isOnline) syncPendingCollections();
-    } catch (e) {
-      console.error("Failed to save to IndexedDB", e);
-      alert("فشل حفظ البيانات محلياً. يرجى التحقق من وحدة التحكم لمزيد من التفاصيل.");
-    }
-  }
-  
-  function mapWeatherCode(code) {
-      if (code === 0) return 'صافٍ';
-      if (code >= 1 && code <= 3) return 'غائم جزئياً';
-      if (code === 45 || code === 48) return 'ضباب';
-      if (code >= 51 && code <= 57) return 'مطر خفيف';
-      if (code >= 61 && code <= 67) return 'مطر';
-      if (code >= 80 && code <= 82) return 'مطر غزير';
-      if (code >= 71 && code <= 77) return 'ثلج';
-      if (code >= 95 && code <= 99) return 'عاصفة رعدية';
-      return 'مشمس'; // Default
-  }
-
-  function handleGetLocation() {
-    if (!navigator.geolocation) {
-        alert('خاصية تحديد الموقع غير مدعومة في هذا المتصفح.');
-        return;
-    }
-    locationIconWrapper.innerHTML = ICONS.spinner;
-    getLocationBtn.disabled = true;
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-            const { latitude, longitude } = position.coords;
-            document.getElementById('gpsCoordinates').value = longitude.toFixed(5) + '_' + latitude.toFixed(5);
+            </div>
             
-            if (!navigator.onLine) {
-                alert('أنت غير متصل بالإنترنت. تم تحديد الإحداثيات فقط.');
-                return; 
-            }
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div>
+                    <label class="block text-sm font-medium">تاريخ الجمع</label>
+                    <input name="collectionDate" type="date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">وقت الجمع</label>
+                    <input name="collectionTime" type="time" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                </div>
+            </div>
 
-            const [geoRes, weatherRes] = await Promise.all([
-                fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + latitude + '&lon=' + longitude + '&accept-language=ar'),
-                fetch('https://api.open-meteo.com/v1/forecast?latitude=' + latitude + '&longitude=' + longitude + '&current=temperature_2m,weather_code')
-            ]);
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium">جامع البذور</label>
+                <input name="collectorName" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium">الفريق</label>
+                <input name="team" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+              </div>
+            </div>
 
-            if (!geoRes.ok || !weatherRes.ok) throw new Error('فشل جلب بيانات الموقع أو الطقس.');
+            <div>
+              <label class="block text-sm font-medium">ملاحظات عامة</label>
+              <textarea name="generalNotes" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></textarea>
+            </div>
 
-            const geoData = await geoRes.json();
-            const weatherData = await weatherRes.json();
+            <div class="flex justify-end">
+                <button type="submit" id="save-button" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 flex items-center gap-2">
+                  <i data-lucide="save" class="w-5 h-5"></i>
+                  <span>حفظ البيانات محلياً</span>
+                </button>
+            </div>
+        </form>
+      </div>
+    </div>
 
-            document.getElementById('locationName').value = geoData.display_name || '';
-            document.getElementById('temperature').value = weatherData.current.temperature_2m;
-            document.getElementById('weatherCondition').value = mapWeatherCode(weatherData.current.weather_code);
+    <script>
+      const SUPABASE_URL = 'https://taodxqtlkyhkupktliwv.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhb2R4cXRsa3loa3Vwa3RsaXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDkxMjUsImV4cCI6MjA3NDY4NTEyNX0.3_Lolpx49GZJAai8I5qQRHpD8fXnuOGKJKEhHmXH9Ps';
 
-        } catch (error) {
-            console.error('Error fetching location/weather details:', error);
-            alert('لم نتمكن من جلب اسم الموقع والطقس تلقائياً. تم تحديد الإحداثيات فقط.');
-        } finally {
-            locationIconWrapper.innerHTML = ICONS.mapPin;
-            getLocationBtn.disabled = false;
+      // --- Dexie DB Setup ---
+      const db = new Dexie('NurseryDB');
+      db.version(2).stores({
+        offlineCollections: '++id, synced',
+      });
+
+      // --- State ---
+      let isOnline = navigator.onLine;
+      let isSyncing = false;
+      let formData = null;
+
+      // --- UI Elements ---
+      const app = {
+        errorContainer: document.getElementById('error-container'),
+        errorMessage: document.getElementById('error-message'),
+        mainContent: document.getElementById('main-content'),
+        plantInfo: document.getElementById('plant-info'),
+        collectionForm: document.getElementById('collection-form'),
+        getLocationBtn: document.getElementById('get-location-btn'),
+        saveButton: document.getElementById('save-button'),
+        successMessage: document.getElementById('success-message'),
+        syncStatus: document.getElementById('sync-status'),
+        syncIcon: document.getElementById('sync-icon'),
+        syncText: document.getElementById('sync-text'),
+        syncButton: document.getElementById('sync-button'),
+        syncButtonIcon: document.getElementById('sync-button-icon'),
+        syncButtonText: document.getElementById('sync-button-text'),
+        pendingCountContainer: document.getElementById('pending-count-container'),
+        pendingCount: document.getElementById('pending-count'),
+      };
+
+      // --- Main Logic ---
+      document.addEventListener('DOMContentLoaded', () => {
+        try {
+          const dataParam = new URLSearchParams(window.location.search).get('data');
+          if (!dataParam) throw new Error('لم يتم توفير بيانات في الرابط.');
+          formData = decodeData(dataParam);
+          renderHeader(formData);
+          app.mainContent.hidden = false;
+        } catch (e) {
+          showError('فشل في فك تشفير بيانات النموذج. قد يكون الرابط غير صالح أو تالف.');
+          console.error('Form render error:', e);
         }
-      },
-      (error) => {
-        let errorMessage = 'لا يمكن الحصول على الموقع الحالي. يرجى إدخاله يدوياً.';
-        switch(error.code) {
-            case error.PERMISSION_DENIED: errorMessage = 'تم رفض إذن الوصول إلى الموقع.'; break;
-            case error.POSITION_UNAVAILABLE: errorMessage = 'معلومات الموقع غير متاحة.'; break;
-            case error.TIMEOUT: errorMessage = 'انتهت مهلة طلب الموقع.'; break;
-        }
-        alert(errorMessage);
-        console.error('Geolocation Error:', error.message);
-        locationIconWrapper.innerHTML = ICONS.mapPin;
-        getLocationBtn.disabled = false;
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    );
-  }
-  
-  function renderEquipment() {
-    const container = document.getElementById('equipment-list');
-    EQUIPMENT_LIST.forEach(function(equip) {
-      container.innerHTML += 
-        '<div class="flex items-center gap-2" style="border: 1px solid var(--color-border); padding: 0.75rem; border-radius: 0.5rem;">' +
-          '<input type="checkbox" id="equip-' + equip.id + '" name="' + equip.id + '" style="width: 1rem; height: 1rem;">' +
-          '<label for="equip-' + equip.id + '" style="font-weight: 500;">' + equip.name + '</label>' +
-        '</div>';
-    });
-  }
+        
+        lucide.createIcons();
+        setupEventListeners();
+        updateSyncStatusUI();
+        updatePendingCountUI();
 
-  document.addEventListener('DOMContentLoaded', async () => {
-    try {
-      // Check for required libraries
-      if (typeof pako === 'undefined' || typeof Dexie === 'undefined') {
-        showError('فشل تحميل المكتبات الأساسية. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.');
-        return;
+        if (isOnline) {
+          syncPendingCollections();
+        }
+      });
+
+      function setupEventListeners() {
+        window.addEventListener('online', () => { isOnline = true; updateSyncStatusUI(); syncPendingCollections(); });
+        window.addEventListener('offline', () => { isOnline = false; updateSyncStatusUI(); });
+        app.collectionForm.addEventListener('submit', saveOffline);
+        app.getLocationBtn.addEventListener('click', getOfflineLocation);
+        app.syncButton.addEventListener('click', syncPendingCollections);
+      }
+
+      function decodeData(encodedString) {
+        const base64String = decodeURIComponent(encodedString);
+        const binaryString = atob(base64String);
+        const compressed = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            compressed[i] = binaryString.charCodeAt(i);
+        }
+        const jsonString = pako.inflate(compressed, { to: 'string' });
+        return JSON.parse(jsonString);
       }
       
-      // --- DATABASE SETUP ---
-      db = new Dexie('NurseryDB');
-      db.version(2).stores({ offlineCollections: '++id, synced' });
+      function renderHeader(data) {
+        app.plantInfo.innerHTML = `
+            <p class="text-sm text-gray-600"><strong>الباركود:</strong> ${data.barcodeId}</p>
+            <p class="text-sm text-gray-600"><strong>اسم النبات:</strong> ${data.plantName}</p>
+            <p class="text-sm text-gray-600"><strong>الاسم العلمي:</strong> <em>${data.scientificName}</em></p>
+        `;
+        const form = app.collectionForm.elements;
+        form.collectionDate.value = new Date().toISOString().split('T')[0];
+        form.collectionTime.value = new Date().toTimeString().split(' ')[0].substring(0, 5);
+      }
 
-      // Assign UI elements
-      form = document.getElementById('collectionForm');
-      formContainer = document.getElementById('form-container');
-      errorContainer = document.getElementById('error-container');
-      errorMessage = document.getElementById('error-message');
-      syncHeader = document.getElementById('sync-status-header');
-      saveSuccessMsg = document.getElementById('save-success-msg');
-      getLocationBtn = document.getElementById('getLocationBtn');
-      locationIconWrapper = document.getElementById('location-icon-wrapper');
-      recordsToggle = document.getElementById('local-records-toggle');
-      recordsContainer = document.getElementById('local-records-container');
-      recordsChevron = document.getElementById('records-chevron');
+      async function saveOffline(event) {
+        event.preventDefault();
+        if (!app.collectionForm.checkValidity()) {
+          alert('الرجاء تعبئة جميع الحقول المطلوبة.');
+          return;
+        }
+        
+        const formElements = app.collectionForm.elements;
+        const dataToSave = {
+          ...formData, // from decoded URL
+          quantity: formElements.quantity.value,
+          unit: formElements.unit.value,
+          qualityLevel: formElements.qualityLevel.value,
+          locationName: formElements.locationName.value,
+          gpsCoordinates: formElements.gpsCoordinates.value,
+          collectionDate: formElements.collectionDate.value,
+          collectionTime: formElements.collectionTime.value,
+          collectorName: formElements.collectorName.value,
+          team: formElements.team.value,
+          generalNotes: formElements.generalNotes.value,
+          collectedAt: new Date().toISOString(),
+        };
 
-      locationIconWrapper.innerHTML = ICONS.mapPin;
-      renderEquipment();
+        try {
+          await db.offlineCollections.add({ data: dataToSave, synced: false });
+          app.successMessage.hidden = false;
+          app.collectionForm.reset();
+          renderHeader(formData); // Re-populate default dates
+          setTimeout(() => { app.successMessage.hidden = true; }, 3000);
+          await updatePendingCountUI();
+          if (isOnline) syncPendingCollections();
+        } catch (e) {
+          showError("فشل حفظ البيانات محلياً. قد تكون مساحة التخزين ممتلئة.");
+          console.error("Failed to save to IndexedDB", e);
+        }
+      }
+
+      function getOfflineLocation() {
+        if (!navigator.geolocation) {
+          alert('خاصية تحديد الموقع غير مدعومة في هذا المتصفح.');
+          return;
+        }
+        
+        app.getLocationBtn.disabled = true;
+        app.getLocationBtn.innerHTML = '<div class="loader h-5 w-5 rounded-full border-2 border-gray-200"></div>';
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            app.collectionForm.elements.gpsCoordinates.value = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+            app.getLocationBtn.disabled = false;
+            app.getLocationBtn.innerHTML = '<i data-lucide="map-pin" class="w-5 h-5"></i>';
+            lucide.createIcons();
+          },
+          (error) => {
+            alert('لا يمكن الحصول على الموقع الحالي. يرجى التأكد من تفعيل خدمات الموقع.');
+            app.getLocationBtn.disabled = false;
+            app.getLocationBtn.innerHTML = '<i data-lucide="map-pin" class="w-5 h-5"></i>';
+            lucide.createIcons();
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      }
       
-      baseData = decodeData(encodedData);
-      document.getElementById('barcodeId').value = baseData.barcodeId;
-      document.getElementById('plantName').value = baseData.plantName;
-      document.getElementById('scientificName').value = baseData.scientificName;
-      document.getElementById('userEmail').value = baseData.userEmail || 'غير معروف';
-      
-      document.getElementById('collectionDate').value = new Date().toISOString().split('T')[0];
-      document.getElementById('collectionTime').value = new Date().toTimeString().split(' ')[0].substring(0,5);
+      async function syncPendingCollections() {
+          if (!isOnline || isSyncing) return;
+          
+          isSyncing = true;
+          updateSyncStatusUI();
 
-      await updatePendingCount();
-      await renderLocalRecords();
-      if (isOnline) syncPendingCollections();
+          const unsynced = await db.offlineCollections.where('synced').equals(0).toArray();
 
-      // Event Listeners
-      form.addEventListener('submit', handleFormSubmit);
-      getLocationBtn.addEventListener('click', handleGetLocation);
-      recordsToggle.addEventListener('click', () => {
-        const isHidden = recordsContainer.style.display === 'none';
-        recordsContainer.style.display = isHidden ? 'block' : 'none';
-        recordsChevron.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
-      });
-      window.addEventListener('online', () => { isOnline = true; updateSyncUI(); syncPendingCollections(); });
-      window.addEventListener('offline', () => { isOnline = false; updateSyncUI(); });
-    } catch (e) {
-        showError('حدث خطأ غير متوقع أثناء تهيئة الصفحة: ' + e.message);
-        console.error('Initialization error:', e);
-    }
-  });
-</script>
+          if (unsynced.length === 0) {
+              isSyncing = false;
+              updateSyncStatusUI();
+              return;
+          }
+
+          let successCount = 0;
+          for (const item of unsynced) {
+              const d = item.data;
+              const record = {
+                  barcode_id: d.barcodeId,
+                  plant_id: d.plantId,
+                  plant_type: d.plantName,
+                  scientific_name: d.scientificName,
+                  quantity: d.quantity ? parseFloat(d.quantity) : null,
+                  unit: d.unit,
+                  quality: d.qualityLevel,
+                  collection_date: d.collectionDate,
+                  collection_time: d.collectionTime,
+                  location: d.locationName,
+                  gps_coordinates: d.gpsCoordinates,
+                  collector: d.collectorName,
+                  team: d.team,
+                  notes: d.generalNotes,
+                  status: 'قيد المعالجة',
+              };
+
+              try {
+                  const response = await fetch(`${SUPABASE_URL}/rest/v1/seed_collections`, {
+                      method: 'POST',
+                      headers: {
+                          'apikey': SUPABASE_ANON_KEY,
+                          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                          'Content-Type': 'application/json',
+                          'Prefer': 'return=minimal'
+                      },
+                      body: JSON.stringify(record)
+                  });
+
+                  if (!response.ok) {
+                      throw new Error(`Supabase error: ${response.statusText}`);
+                  }
+                  
+                  await db.offlineCollections.update(item.id, { synced: true });
+                  successCount++;
+
+              } catch (error) {
+                  console.error('Sync error for item ' + item.id + ':', error);
+              }
+          }
+          console.log(`Successfully synced ${successCount} of ${unsynced.length} records.`);
+          isSyncing = false;
+          updateSyncStatusUI();
+          await updatePendingCountUI();
+      }
+
+      function updateSyncStatusUI() {
+          if (isSyncing) {
+              app.syncStatus.className = 'flex items-center justify-between p-3 mb-4 rounded-lg text-sm bg-blue-100 text-blue-800';
+              app.syncIcon.innerHTML = '<div class="loader h-5 w-5 rounded-full border-2 border-blue-200"></div>';
+              app.syncText.textContent = 'تجري المزامنة...';
+              app.syncButton.disabled = true;
+              app.syncButtonIcon.classList.add('animate-spin');
+          } else if (isOnline) {
+              app.syncStatus.className = 'flex items-center justify-between p-3 mb-4 rounded-lg text-sm bg-green-100 text-green-800';
+              app.syncIcon.innerHTML = '<i data-lucide="wifi" class="w-5 h-5"></i>';
+              app.syncText.textContent = 'متصل بالإنترنت';
+              app.syncButton.disabled = false;
+              app.syncButtonIcon.classList.remove('animate-spin');
+          } else {
+              app.syncStatus.className = 'flex items-center justify-between p-3 mb-4 rounded-lg text-sm bg-yellow-100 text-yellow-800';
+              app.syncIcon.innerHTML = '<i data-lucide="wifi-off" class="w-5 h-5"></i>';
+              app.syncText.textContent = 'غير متصل بالإنترنت';
+              app.syncButton.disabled = true;
+              app.syncButtonIcon.classList.remove('animate-spin');
+          }
+          lucide.createIcons();
+      }
+
+      async function updatePendingCountUI() {
+          const count = await db.offlineCollections.where('synced').equals(0).count();
+          app.pendingCount.textContent = count;
+          app.pendingCountContainer.hidden = count === 0;
+      }
+
+      function showError(message) {
+        app.errorMessage.textContent = message;
+        app.errorContainer.hidden = false;
+        app.mainContent.hidden = true;
+      }
+    </script>
 </body>
 </html>
