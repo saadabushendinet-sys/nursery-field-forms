@@ -1,0 +1,233 @@
+
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>نموذج جمع ميداني - BRC-1759575803145</title>
+      <script src="https://cdn.tailwindcss.com"></script>
+      <script>
+        function generateDataFile() {
+          const form = document.getElementById('collectionForm');
+          const formData = new FormData(form);
+          const data = {};
+          
+          const fields = ['barcodeId', 'plantName', 'scientificName', 'quantity', 'unit', 'qualityLevel', 
+           'locationName', 'gpsCoordinates', 'collectionDate', 'collectionTime', 'temperature', 'weatherCondition',
+           'collectorName', 'team', 'collectionMethod', 'seedMaturity', 
+           'generalNotes', 'plantEnvironmentNotes'];
+          fields.forEach(key => { data[key] = formData.get(key); });
+
+          data['equipmentUsed'] = {};
+          const equipmentIds = ["collection_bags","pruning_shears","ladder","collection_nets","gloves","storage_boxes","thermometer","gps","camera"];
+          equipmentIds.forEach(id => {
+            data['equipmentUsed'][id] = { used: formData.get(id) === 'on' };
+          });
+
+          const jsonData = JSON.stringify(data, null, 2);
+          const blob = new Blob([jsonData], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'collection-data-BRC-1759575803145.json';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+
+        function getOfflineLocation() {
+            const gpsInput = document.getElementById('gpsCoordinates');
+            const locationButton = document.getElementById('locationButton');
+            if (!navigator.geolocation) {
+                alert('خاصية تحديد الموقع غير مدعومة في هذا المتصفح.');
+                return;
+            }
+
+            locationButton.innerHTML = 'جاري...';
+            locationButton.disabled = true;
+
+            const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                const latitude  = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                gpsInput.value = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+                locationButton.innerHTML = 'تحديد';
+                locationButton.disabled = false;
+              },
+              (err) => {
+                console.warn(`ERROR(${err.code}): ${err.message}`);
+                alert('تعذر الحصول على موقعك. يرجى التأكد من تفعيل خدمات الموقع والموافقة على الصلاحية، ثم حاول مرة أخرى.');
+                locationButton.innerHTML = 'تحديد';
+                locationButton.disabled = false;
+              },
+              options
+            );
+        }
+      </script>
+    </head>
+    <body class="bg-gray-100 p-4 sm:p-8">
+      <div class="max-w-4xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg">
+        <h1 class="text-2xl font-bold mb-2">نموذج جمع ميداني (غير متصل)</h1>
+        <p class="text-gray-600 mb-6">قم بتعبئة الحقول التالية ثم اضغط على "تصدير ملف البيانات" لحفظ المعلومات.</p>
+        
+        <form id="collectionForm" onsubmit="event.preventDefault();">
+          <fieldset class="border-t pt-4 mb-6">
+            <legend class="text-lg font-semibold px-2 mb-4">المعلومات الأساسية</legend>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div><label class="block text-sm">رقم الباركود</label><input type="text" name="barcodeId" value="BRC-1759575803145" readonly class="mt-1 w-full bg-gray-200 p-2 rounded border"></div>
+              <div><label class="block text-sm">نوع النبات</label><input type="text" name="plantName" value="زيتون" readonly class="mt-1 w-full bg-gray-200 p-2 rounded border"></div>
+              <div><label class="block text-sm">الاسم العلمي</label><input type="text" name="scientificName" value="olive" readonly class="mt-1 w-full bg-gray-200 p-2 rounded border"></div>
+            </div>
+          </fieldset>
+          
+          <fieldset class="border-t pt-4 mb-6">
+            <legend class="text-lg font-semibold px-2 mb-4">بيانات الجمع</legend>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label for="quantity" class="block text-sm font-medium mb-1">الكمية المجمعة *</label>
+                    <div class="flex">
+                        <input id="quantity" name="quantity" type="number" placeholder="0" value="0" class="w-full text-sm bg-gray-50 border-gray-300 rounded-r-lg p-2.5 border-l-0">
+                        <select name="unit" class="text-sm bg-gray-50 border-gray-300 rounded-l-lg p-2.5">
+                            <option>كيلو</option><option>جرام</option><option>لتر</option><option>قطعة</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="qualityLevel" class="block text-sm font-medium mb-1">مستوى الجودة *</label>
+                    <select id="qualityLevel" name="qualityLevel" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
+                        <option>ممتاز</option><option>جيد جداً</option><option selected>جيد</option><option>متوسط</option><option>ضعيف</option>
+                    </select>
+                </div>
+                <div>
+                  <label for="locationName" class="block text-sm font-medium mb-1">موقع الجمع *</label>
+                  <input id="locationName" name="locationName" type="text" placeholder="مثال: وادي حنيفة - المنطقة الشمالية" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
+                </div>
+                <div>
+                  <label for="gpsCoordinates" class="block text-sm font-medium mb-1">الإحداثيات (GPS) *</label>
+                  <div class="flex items-center gap-2 mt-1">
+                    <input id="gpsCoordinates" name="gpsCoordinates" type="text" placeholder="مثال: 24.7136, 46.6753" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
+                    <button type="button" id="locationButton" onclick="getOfflineLocation()" class="px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm shrink-0 hover:bg-blue-700">تحديد</button>
+                  </div>
+                </div>
+                <div>
+                    <label for="collectionDate" class="block text-sm font-medium mb-1">تاريخ الجمع *</label>
+                    <input id="collectionDate" name="collectionDate" type="date" value="2025-10-04" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
+                </div>
+                <div>
+                    <label for="collectionTime" class="block text-sm font-medium mb-1">وقت الجمع *</label>
+                    <input id="collectionTime" name="collectionTime" type="time" value="15:59" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
+                </div>
+                <div>
+                    <label for="temperature" class="block text-sm font-medium mb-1">درجة الحرارة (مْ)</label>
+                    <input id="temperature" name="temperature" type="number" value="25" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
+                </div>
+                <div>
+                    <label for="weatherCondition" class="block text-sm font-medium mb-1">حالة الطقس</label>
+                    <select id="weatherCondition" name="weatherCondition" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
+                        <option selected>مشمس</option><option>غائم جزئياً</option><option>غائم</option><option>ممطر</option><option>عاصف</option>
+                    </select>
+                </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="border-t pt-4 mb-6">
+            <legend class="text-lg font-semibold px-2 mb-4">التفاصيل الإضافية</legend>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="collectorName" class="block text-sm font-medium mb-1">اسم الجامع *</label>
+                <input id="collectorName" name="collectorName" type="text" placeholder="أدخل اسم الجامع" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
+              </div>
+              <div>
+                <label for="team" class="block text-sm font-medium mb-1">الفريق</label>
+                <select id="team" name="team" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
+                    <option value="" disabled selected>اختر الفريق</option><option>فريق أ</option><option>فريق ب</option><option>فريق ج</option>
+                </select>
+              </div>
+              <div>
+                <label for="collectionMethod" class="block text-sm font-medium mb-1">طريقة الجمع</label>
+                <select id="collectionMethod" name="collectionMethod" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
+                    <option value="" disabled selected>اختر طريقة الجمع</option><option>يدوي</option><option>آلي</option>
+                </select>
+              </div>
+              <div>
+                <label for="seedMaturity" class="block text-sm font-medium mb-1">درجة نضج البذور</label>
+                <select id="seedMaturity" name="seedMaturity" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
+                    <option value="" disabled selected>اختر درجة النضج</option><option>ناضجة</option><option>غير ناضجة</option><option>مختلط</option>
+                </select>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium mb-2">المعدات المستخدمة</label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+          <input id="collection_bags" name="collection_bags" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+          <label for="collection_bags" class="text-sm font-medium">أكياس جمع</label>
+      </div>
+    
+      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+          <input id="pruning_shears" name="pruning_shears" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+          <label for="pruning_shears" class="text-sm font-medium">مقص تقليم</label>
+      </div>
+    
+      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+          <input id="ladder" name="ladder" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+          <label for="ladder" class="text-sm font-medium">سلم</label>
+      </div>
+    
+      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+          <input id="collection_nets" name="collection_nets" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+          <label for="collection_nets" class="text-sm font-medium">شباك جمع</label>
+      </div>
+    
+      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+          <input id="gloves" name="gloves" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+          <label for="gloves" class="text-sm font-medium">قفازات</label>
+      </div>
+    
+      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+          <input id="storage_boxes" name="storage_boxes" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+          <label for="storage_boxes" class="text-sm font-medium">صناديق تخزين</label>
+      </div>
+    
+      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+          <input id="thermometer" name="thermometer" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+          <label for="thermometer" class="text-sm font-medium">مقياس حرارة</label>
+      </div>
+    
+      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+          <input id="gps" name="gps" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+          <label for="gps" class="text-sm font-medium">GPS</label>
+      </div>
+    
+      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+          <input id="camera" name="camera" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+          <label for="camera" class="text-sm font-medium">كاميرا</label>
+      </div>
+    </div>
+              </div>
+            </div>
+          </fieldset>
+          
+          <fieldset class="border-t pt-4 mb-6">
+            <legend class="text-lg font-semibold px-2 mb-4">الملاحظات</legend>
+            <div>
+                <label for="generalNotes" class="block text-sm font-medium mb-1">ملاحظات عامة</label>
+                <textarea id="generalNotes" name="generalNotes" rows="3" placeholder="أدخل أي ملاحظات مهمة حول عملية الجمع" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5"></textarea>
+            </div>
+            <div class="mt-4">
+                <label for="plantEnvironmentNotes" class="block text-sm font-medium mb-1">ملاحظات حول النبات والبيئة</label>
+                <textarea id="plantEnvironmentNotes" name="plantEnvironmentNotes" rows="3" placeholder="مثال: النبات في حالة جيدة، البذور ناضجة..." class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5"></textarea>
+            </div>
+          </fieldset>
+        </form>
+        <div class="mt-8 pt-6 border-t flex justify-end">
+          <button onclick="generateDataFile()" class="px-6 py-3 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
+            تصدير ملف البيانات
+          </button>
+        </div>
+      </div>
+    </body>
+    </html>
+    
