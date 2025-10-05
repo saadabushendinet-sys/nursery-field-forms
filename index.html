@@ -181,13 +181,15 @@
       // --- Main Logic ---
       document.addEventListener('DOMContentLoaded', () => {
         try {
-          const dataParam = new URLSearchParams(window.location.search).get('data');
-          if (!dataParam) throw new Error('لم يتم توفير بيانات في الرابط.');
-          formData = decodeData(dataParam);
+          const encodedData = 'eJw1zT1uwkAQhuG7bJ1Bs9kde50KgShoKLjB7O4YVvIPsg0Noo0ijpIyp8G3iWM57Tzz6rsrz11oo+yj+lCb4xZ0TgXl5NBoS+pNXSpuhlmdJ2tYI5TGebDOBnAFCmBWEiNqh5b/gwPXMiWvn/H5+h6/xs8J+pCkGVKZwqJtlW4ywbWXbl4onEXKOIN3bSLYwBo8lwKkAwbjSXIXl/9dzamakp45rthf+7M0Ma1Pf+dVaGv1+AVXDUSg';
+          if (!encodedData || encodedData.startsWith('__ENCODED_DATA')) {
+             throw new Error('فشل تحميل بيانات النموذج المضمنة. الملف قد يكون تالفاً.');
+          }
+          formData = decodeData(encodedData);
           renderHeader(formData);
           app.mainContent.hidden = false;
         } catch (e) {
-          showError('فشل في فك تشفير بيانات النموذج. قد يكون الرابط غير صالح أو تالف.');
+          showError('فشل في فك تشفير بيانات النموذج. قد يكون الملف تالفًا.');
           console.error('Form render error:', e);
         }
         
@@ -210,8 +212,8 @@
       }
 
       function decodeData(encodedString) {
-        const base64String = decodeURIComponent(encodedString);
-        const binaryString = atob(base64String);
+        // Data is now directly embedded as a Base64 string.
+        const binaryString = atob(encodedString);
         const compressed = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
             compressed[i] = binaryString.charCodeAt(i);
