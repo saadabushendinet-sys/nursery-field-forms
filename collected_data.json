@@ -1,0 +1,34 @@
+[
+  {
+    "barcodeId": "BRC-1759575803145",
+    "plantId": "8b543a10-f38b-484c-890e-06f5a001804a",
+    "plantName": "زيتون",
+    "scientificName": "olive",
+    "userId": "984056a6-213d-4ca1-bafe-51c0c3b5e78d",
+    "userEmail": "saad.abushendi@gmail.com",
+    "collectedAt": "2025-10-05T16:24:23.961Z",
+    "quantity": "1",
+    "unit": "kg",
+    "qualityLevel": "ممتاز",
+    "collectionDate": "2025-10-05",
+    "collectionTime": "19:23",
+    "locationName": "الخالدية, قضاء الخالدية, لواء البادية الشمالية الغربية, المفرق, الأردن",
+    "gpsCoordinates": "36.29711_32.16835",
+    "temperature": "24.1",
+    "weatherCondition": "صافٍ",
+    "collectorName": "ertertert",
+    "team": "ertert",
+    "collectionMethod": "erterter",
+    "seedMaturity": "ertert",
+    "collection_bags": "on",
+    "ladder": "on",
+    "gloves": "on",
+    "generalNotes": "",
+    "plantEnvironmentNotes": "",
+    "equipmentUsed": [
+      "collection_bags",
+      "ladder",
+      "gloves"
+    ]
+  }
+]
