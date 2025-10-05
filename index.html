@@ -77,6 +77,19 @@
 <div class="container">
   <div id="form-container">
     <div id="sync-status-header" class="card mb-6"></div>
+
+    <div class="card mb-6">
+      <div id="local-records-toggle" style="padding: 1.5rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin: 0; font-size: 1.25rem; font-weight: 600;">السجلات المحفوظة محلياً</h2>
+        <svg id="records-chevron" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s;"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div id="local-records-container" style="padding: 0 1.5rem 1.5rem; display: none; border-top: 1px solid var(--color-border);">
+          <div id="local-records-list" style="padding-top: 1.5rem;">
+              <p style="text-align: center; color: var(--color-text-muted); padding: 1rem 0;">جاري تحميل السجلات...</p>
+          </div>
+      </div>
+    </div>
+    
     <div class="card p-6">
       <h1>نموذج جمع ميداني</h1>
       <p class="mb-6">قم بتعبئة الحقول التالية ثم اضغط على "حفظ البيانات" لحفظ المعلومات محلياً.</p>
@@ -164,13 +177,6 @@
         </div>
       </form>
     </div>
-
-    <div class="card p-6" style="margin-top: 1.5rem;">
-        <h2>السجلات المحفوظة محلياً</h2>
-        <div id="local-records-list">
-            <p style="text-align: center; color: var(--color-text-muted); padding: 1rem 0;">جاري تحميل السجلات...</p>
-        </div>
-    </div>
   </div>
   <div id="error-container" class="hidden card p-6 text-center" style="text-align: center;">
       <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: auto; margin-bottom: 1rem;" class="text-red"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
@@ -212,7 +218,7 @@
   let db;
 
   // --- UI ELEMENTS ---
-  let form, formContainer, errorContainer, errorMessage, syncHeader, saveSuccessMsg, getLocationBtn, locationIconWrapper;
+  let form, formContainer, errorContainer, errorMessage, syncHeader, saveSuccessMsg, getLocationBtn, locationIconWrapper, recordsToggle, recordsContainer, recordsChevron;
 
   function showError(message) {
       formContainer.classList.add('hidden');
@@ -503,6 +509,10 @@
       saveSuccessMsg = document.getElementById('save-success-msg');
       getLocationBtn = document.getElementById('getLocationBtn');
       locationIconWrapper = document.getElementById('location-icon-wrapper');
+      recordsToggle = document.getElementById('local-records-toggle');
+      recordsContainer = document.getElementById('local-records-container');
+      recordsChevron = document.getElementById('records-chevron');
+
       locationIconWrapper.innerHTML = ICONS.mapPin;
       renderEquipment();
       
@@ -518,8 +528,14 @@
       await renderLocalRecords();
       if (isOnline) syncPendingCollections();
 
+      // Event Listeners
       form.addEventListener('submit', handleFormSubmit);
       getLocationBtn.addEventListener('click', handleGetLocation);
+      recordsToggle.addEventListener('click', () => {
+        const isHidden = recordsContainer.style.display === 'none';
+        recordsContainer.style.display = isHidden ? 'block' : 'none';
+        recordsChevron.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+      });
       window.addEventListener('online', () => { isOnline = true; updateSyncUI(); syncPendingCollections(); });
       window.addEventListener('offline', () => { isOnline = false; updateSyncUI(); });
     } catch (e) {
