@@ -500,7 +500,7 @@
       
       // --- DATABASE SETUP ---
       db = new Dexie('NurseryDB');
-      db.version(1).stores({ offlineCollections: '++id, synced, *data.barcodeId' });
+      db.version(2).stores({ offlineCollections: '++id, synced' });
 
       // Assign UI elements
       form = document.getElementById('collectionForm');
