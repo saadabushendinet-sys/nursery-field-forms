@@ -3,7 +3,6 @@
     <html lang="ar" dir="rtl">
     <head>
       <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>نموذج جمع ميداني - BRC-1759575803145</title>
       <script src="https://cdn.tailwindcss.com"></script>
       <script>
@@ -13,7 +12,7 @@
           const data = {};
           
           const fields = ['barcodeId', 'plantName', 'scientificName', 'quantity', 'unit', 'qualityLevel', 
-           'locationName', 'gpsCoordinates', 'collectionDate', 'collectionTime', 'temperature', 'weatherCondition',
+           'location', 'collectionDate', 'collectionTime', 'temperature', 'weatherCondition',
            'collectorName', 'team', 'collectionMethod', 'seedMaturity', 
            'generalNotes', 'plantEnvironmentNotes'];
           fields.forEach(key => { data[key] = formData.get(key); });
@@ -37,39 +36,43 @@
         }
 
         function getOfflineLocation() {
-            const gpsInput = document.getElementById('gpsCoordinates');
+            const locationInput = document.getElementById('location');
             const locationButton = document.getElementById('locationButton');
             if (!navigator.geolocation) {
                 alert('خاصية تحديد الموقع غير مدعومة في هذا المتصفح.');
                 return;
             }
 
-            locationButton.innerHTML = 'جاري...';
+            locationButton.innerHTML = 'جاري التحديد...';
             locationButton.disabled = true;
 
-            const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
 
-            navigator.geolocation.getCurrentPosition(
-              (position) => {
+            function success(position) {
                 const latitude  = position.coords.latitude;
                 const longitude = position.coords.longitude;
-                gpsInput.value = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+                locationInput.value = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
                 locationButton.innerHTML = 'تحديد';
                 locationButton.disabled = false;
-              },
-              (err) => {
+            }
+
+            function error(err) {
                 console.warn(`ERROR(${err.code}): ${err.message}`);
                 alert('تعذر الحصول على موقعك. يرجى التأكد من تفعيل خدمات الموقع والموافقة على الصلاحية، ثم حاول مرة أخرى.');
                 locationButton.innerHTML = 'تحديد';
                 locationButton.disabled = false;
-              },
-              options
-            );
+            }
+
+            navigator.geolocation.getCurrentPosition(success, error, options);
         }
       </script>
     </head>
-    <body class="bg-gray-100 p-4 sm:p-8">
-      <div class="max-w-4xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg">
+    <body class="bg-gray-100 p-8">
+      <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg">
         <h1 class="text-2xl font-bold mb-2">نموذج جمع ميداني (غير متصل)</h1>
         <p class="text-gray-600 mb-6">قم بتعبئة الحقول التالية ثم اضغط على "تصدير ملف البيانات" لحفظ المعلومات.</p>
         
@@ -86,7 +89,7 @@
           <fieldset class="border-t pt-4 mb-6">
             <legend class="text-lg font-semibold px-2 mb-4">بيانات الجمع</legend>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="md:col-span-2">
+                <div>
                     <label for="quantity" class="block text-sm font-medium mb-1">الكمية المجمعة *</label>
                     <div class="flex">
                         <input id="quantity" name="quantity" type="number" placeholder="0" value="0" class="w-full text-sm bg-gray-50 border-gray-300 rounded-r-lg p-2.5 border-l-0">
@@ -95,20 +98,16 @@
                         </select>
                     </div>
                 </div>
-                <div class="md:col-span-2">
+                <div>
                     <label for="qualityLevel" class="block text-sm font-medium mb-1">مستوى الجودة *</label>
                     <select id="qualityLevel" name="qualityLevel" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
                         <option>ممتاز</option><option>جيد جداً</option><option selected>جيد</option><option>متوسط</option><option>ضعيف</option>
                     </select>
                 </div>
                 <div>
-                  <label for="locationName" class="block text-sm font-medium mb-1">موقع الجمع *</label>
-                  <input id="locationName" name="locationName" type="text" placeholder="مثال: وادي حنيفة - المنطقة الشمالية" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
-                </div>
-                <div>
-                  <label for="gpsCoordinates" class="block text-sm font-medium mb-1">الإحداثيات (GPS) *</label>
+                  <label for="location" class="block text-sm font-medium mb-1">موقع الجمع (GPS) *</label>
                   <div class="flex items-center gap-2 mt-1">
-                    <input id="gpsCoordinates" name="gpsCoordinates" type="text" placeholder="مثال: 24.7136, 46.6753" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
+                    <input id="location" name="location" type="text" placeholder="مثال: 24.7136, 46.6753" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
                     <button type="button" id="locationButton" onclick="getOfflineLocation()" class="px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm shrink-0 hover:bg-blue-700">تحديد</button>
                   </div>
                 </div>
@@ -118,13 +117,13 @@
                 </div>
                 <div>
                     <label for="collectionTime" class="block text-sm font-medium mb-1">وقت الجمع *</label>
-                    <input id="collectionTime" name="collectionTime" type="time" value="15:59" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
+                    <input id="collectionTime" name="collectionTime" type="time" value="15:51" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
                 </div>
                 <div>
-                    <label for="temperature" class="block text-sm font-medium mb-1">درجة الحرارة (مْ)</label>
+                    <label for="temperature" class="block text-sm font-medium mb-1">درجة الحرارة (C°)</label>
                     <input id="temperature" name="temperature" type="number" value="25" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
                 </div>
-                <div>
+                <div class="md:col-span-2">
                     <label for="weatherCondition" class="block text-sm font-medium mb-1">حالة الطقس</label>
                     <select id="weatherCondition" name="weatherCondition" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
                         <option selected>مشمس</option><option>غائم جزئياً</option><option>غائم</option><option>ممطر</option><option>عاصف</option>
@@ -160,7 +159,7 @@
               </div>
               <div class="md:col-span-2">
                 <label class="block text-sm font-medium mb-2">المعدات المستخدمة</label>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
       <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
           <input id="collection_bags" name="collection_bags" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
           <label for="collection_bags" class="text-sm font-medium">أكياس جمع</label>
