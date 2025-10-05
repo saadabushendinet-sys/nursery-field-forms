@@ -1,232 +1,245 @@
 
-    <!DOCTYPE html>
-    <html lang="ar" dir="rtl">
-    <head>
-      <meta charset="utf-8">
-      <title>نموذج جمع ميداني - BRC-1759575803145</title>
-      <script src="https://cdn.tailwindcss.com"></script>
-      <script>
-        function generateDataFile() {
-          const form = document.getElementById('collectionForm');
-          const formData = new FormData(form);
-          const data = {};
-          
-          const fields = ['barcodeId', 'plantName', 'scientificName', 'quantity', 'unit', 'qualityLevel', 
-           'location', 'collectionDate', 'collectionTime', 'temperature', 'weatherCondition',
-           'collectorName', 'team', 'collectionMethod', 'seedMaturity', 
-           'generalNotes', 'plantEnvironmentNotes'];
-          fields.forEach(key => { data[key] = formData.get(key); });
-
-          data['equipmentUsed'] = {};
-          const equipmentIds = ["collection_bags","pruning_shears","ladder","collection_nets","gloves","storage_boxes","thermometer","gps","camera"];
-          equipmentIds.forEach(id => {
-            data['equipmentUsed'][id] = { used: formData.get(id) === 'on' };
-          });
-
-          const jsonData = JSON.stringify(data, null, 2);
-          const blob = new Blob([jsonData], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'collection-data-BRC-1759575803145.json';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }
-
-        function getOfflineLocation() {
-            const locationInput = document.getElementById('location');
-            const locationButton = document.getElementById('locationButton');
-            if (!navigator.geolocation) {
-                alert('خاصية تحديد الموقع غير مدعومة في هذا المتصفح.');
-                return;
-            }
-
-            locationButton.innerHTML = 'جاري التحديد...';
-            locationButton.disabled = true;
-
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            };
-
-            function success(position) {
-                const latitude  = position.coords.latitude;
-                const longitude = position.coords.longitude;
-                locationInput.value = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-                locationButton.innerHTML = 'تحديد';
-                locationButton.disabled = false;
-            }
-
-            function error(err) {
-                console.warn(`ERROR(${err.code}): ${err.message}`);
-                alert('تعذر الحصول على موقعك. يرجى التأكد من تفعيل خدمات الموقع والموافقة على الصلاحية، ثم حاول مرة أخرى.');
-                locationButton.innerHTML = 'تحديد';
-                locationButton.disabled = false;
-            }
-
-            navigator.geolocation.getCurrentPosition(success, error, options);
-        }
-      </script>
-    </head>
-    <body class="bg-gray-100 p-8">
-      <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg">
-        <h1 class="text-2xl font-bold mb-2">نموذج جمع ميداني (غير متصل)</h1>
-        <p class="text-gray-600 mb-6">قم بتعبئة الحقول التالية ثم اضغط على "تصدير ملف البيانات" لحفظ المعلومات.</p>
-        
-        <form id="collectionForm" onsubmit="event.preventDefault();">
-          <fieldset class="border-t pt-4 mb-6">
-            <legend class="text-lg font-semibold px-2 mb-4">المعلومات الأساسية</legend>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div><label class="block text-sm">رقم الباركود</label><input type="text" name="barcodeId" value="BRC-1759575803145" readonly class="mt-1 w-full bg-gray-200 p-2 rounded border"></div>
-              <div><label class="block text-sm">نوع النبات</label><input type="text" name="plantName" value="زيتون" readonly class="mt-1 w-full bg-gray-200 p-2 rounded border"></div>
-              <div><label class="block text-sm">الاسم العلمي</label><input type="text" name="scientificName" value="olive" readonly class="mt-1 w-full bg-gray-200 p-2 rounded border"></div>
-            </div>
-          </fieldset>
-          
-          <fieldset class="border-t pt-4 mb-6">
-            <legend class="text-lg font-semibold px-2 mb-4">بيانات الجمع</legend>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label for="quantity" class="block text-sm font-medium mb-1">الكمية المجمعة *</label>
-                    <div class="flex">
-                        <input id="quantity" name="quantity" type="number" placeholder="0" value="0" class="w-full text-sm bg-gray-50 border-gray-300 rounded-r-lg p-2.5 border-l-0">
-                        <select name="unit" class="text-sm bg-gray-50 border-gray-300 rounded-l-lg p-2.5">
-                            <option>كيلو</option><option>جرام</option><option>لتر</option><option>قطعة</option>
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <label for="qualityLevel" class="block text-sm font-medium mb-1">مستوى الجودة *</label>
-                    <select id="qualityLevel" name="qualityLevel" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
-                        <option>ممتاز</option><option>جيد جداً</option><option selected>جيد</option><option>متوسط</option><option>ضعيف</option>
-                    </select>
-                </div>
-                <div>
-                  <label for="location" class="block text-sm font-medium mb-1">موقع الجمع (GPS) *</label>
-                  <div class="flex items-center gap-2 mt-1">
-                    <input id="location" name="location" type="text" placeholder="مثال: 24.7136, 46.6753" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
-                    <button type="button" id="locationButton" onclick="getOfflineLocation()" class="px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm shrink-0 hover:bg-blue-700">تحديد</button>
-                  </div>
-                </div>
-                <div>
-                    <label for="collectionDate" class="block text-sm font-medium mb-1">تاريخ الجمع *</label>
-                    <input id="collectionDate" name="collectionDate" type="date" value="2025-10-04" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
-                </div>
-                <div>
-                    <label for="collectionTime" class="block text-sm font-medium mb-1">وقت الجمع *</label>
-                    <input id="collectionTime" name="collectionTime" type="time" value="15:51" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
-                </div>
-                <div>
-                    <label for="temperature" class="block text-sm font-medium mb-1">درجة الحرارة (C°)</label>
-                    <input id="temperature" name="temperature" type="number" value="25" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="weatherCondition" class="block text-sm font-medium mb-1">حالة الطقس</label>
-                    <select id="weatherCondition" name="weatherCondition" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
-                        <option selected>مشمس</option><option>غائم جزئياً</option><option>غائم</option><option>ممطر</option><option>عاصف</option>
-                    </select>
-                </div>
-            </div>
-          </fieldset>
-
-          <fieldset class="border-t pt-4 mb-6">
-            <legend class="text-lg font-semibold px-2 mb-4">التفاصيل الإضافية</legend>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label for="collectorName" class="block text-sm font-medium mb-1">اسم الجامع *</label>
-                <input id="collectorName" name="collectorName" type="text" placeholder="أدخل اسم الجامع" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
-              </div>
-              <div>
-                <label for="team" class="block text-sm font-medium mb-1">الفريق</label>
-                <select id="team" name="team" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
-                    <option value="" disabled selected>اختر الفريق</option><option>فريق أ</option><option>فريق ب</option><option>فريق ج</option>
-                </select>
-              </div>
-              <div>
-                <label for="collectionMethod" class="block text-sm font-medium mb-1">طريقة الجمع</label>
-                <select id="collectionMethod" name="collectionMethod" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
-                    <option value="" disabled selected>اختر طريقة الجمع</option><option>يدوي</option><option>آلي</option>
-                </select>
-              </div>
-              <div>
-                <label for="seedMaturity" class="block text-sm font-medium mb-1">درجة نضج البذور</label>
-                <select id="seedMaturity" name="seedMaturity" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5">
-                    <option value="" disabled selected>اختر درجة النضج</option><option>ناضجة</option><option>غير ناضجة</option><option>مختلط</option>
-                </select>
-              </div>
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium mb-2">المعدات المستخدمة</label>
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
-          <input id="collection_bags" name="collection_bags" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-          <label for="collection_bags" class="text-sm font-medium">أكياس جمع</label>
-      </div>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>نموذج جمع ميداني (يعمل بدون انترنت)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: sans-serif; }
+    .btn-primary { background-color: #2563eb; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
+    .btn-primary:disabled { background-color: #93c5fd; cursor: not-allowed; }
+    .btn-secondary { background-color: #4b5563; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; transition: background-color 0.2s; }
+    .btn-green { background-color: #16a34a; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
+    .btn-green:disabled { background-color: #86efac; cursor: not-allowed; }
+    .btn-red { background-color: #ef4444; color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; }
+    input, select, textarea { width: 100%; padding: 0.6rem; border: 1px solid #d1d5db; border-radius: 0.5rem; background-color: #f9fafb; }
+    label { font-weight: 500; margin-bottom: 0.25rem; display: block; }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg my-8">
+    <div class="flex justify-between items-start">
+        <div>
+            <h1 class="text-2xl font-bold mb-2">نموذج جمع ميداني (يعمل بدون انترنت)</h1>
+            <p class="text-gray-600 mb-6">املأ الحقول واحفظ البيانات محلياً. عند توفر الإنترنت، قم بمزامنة البيانات.</p>
+        </div>
+        <div id="sync-status" class="text-sm font-medium text-gray-500"></div>
+    </div>
     
-      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
-          <input id="pruning_shears" name="pruning_shears" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-          <label for="pruning_shears" class="text-sm font-medium">مقص تقليم</label>
-      </div>
-    
-      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
-          <input id="ladder" name="ladder" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-          <label for="ladder" class="text-sm font-medium">سلم</label>
-      </div>
-    
-      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
-          <input id="collection_nets" name="collection_nets" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-          <label for="collection_nets" class="text-sm font-medium">شباك جمع</label>
-      </div>
-    
-      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
-          <input id="gloves" name="gloves" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-          <label for="gloves" class="text-sm font-medium">قفازات</label>
-      </div>
-    
-      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
-          <input id="storage_boxes" name="storage_boxes" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-          <label for="storage_boxes" class="text-sm font-medium">صناديق تخزين</label>
-      </div>
-    
-      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
-          <input id="thermometer" name="thermometer" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-          <label for="thermometer" class="text-sm font-medium">مقياس حرارة</label>
-      </div>
-    
-      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
-          <input id="gps" name="gps" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-          <label for="gps" class="text-sm font-medium">GPS</label>
-      </div>
-    
-      <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
-          <input id="camera" name="camera" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-          <label for="camera" class="text-sm font-medium">كاميرا</label>
+    <div class="border-t pt-4 mb-6">
+      <h2 class="text-lg font-semibold px-2 mb-4">المعلومات الأساسية</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div><label>رقم الباركود</label><input type="text" value="BRC-1759575803145" readonly class="bg-gray-200"></div>
+        <div><label>نوع النبات</label><input type="text" value="زيتون" readonly class="bg-gray-200"></div>
+        <div><label>الاسم العلمي</label><input type="text" value="olive" readonly class="bg-gray-200"></div>
       </div>
     </div>
-              </div>
-            </div>
-          </fieldset>
-          
-          <fieldset class="border-t pt-4 mb-6">
-            <legend class="text-lg font-semibold px-2 mb-4">الملاحظات</legend>
-            <div>
-                <label for="generalNotes" class="block text-sm font-medium mb-1">ملاحظات عامة</label>
-                <textarea id="generalNotes" name="generalNotes" rows="3" placeholder="أدخل أي ملاحظات مهمة حول عملية الجمع" class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5"></textarea>
-            </div>
-            <div class="mt-4">
-                <label for="plantEnvironmentNotes" class="block text-sm font-medium mb-1">ملاحظات حول النبات والبيئة</label>
-                <textarea id="plantEnvironmentNotes" name="plantEnvironmentNotes" rows="3" placeholder="مثال: النبات في حالة جيدة، البذور ناضجة..." class="w-full text-sm bg-gray-50 border-gray-300 rounded-lg p-2.5"></textarea>
-            </div>
-          </fieldset>
-        </form>
-        <div class="mt-8 pt-6 border-t flex justify-end">
-          <button onclick="generateDataFile()" class="px-6 py-3 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
-            تصدير ملف البيانات
-          </button>
+    
+    <form id="collectionForm">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div><label for="quantity">الكمية *</label><input id="quantity" name="quantity" type="number" value="1" required></div>
+        <div><label for="unit">الوحدة *</label><select id="unit" name="unit" required><option>كيلو</option><option>جرام</option><option>قطعة</option></select></div>
+        <div><label for="locationName">موقع الجمع *</label><input id="locationName" name="locationName" type="text" required></div>
+        <div>
+          <label for="gpsCoordinates">إحداثيات GPS *</label>
+          <div class="flex gap-2">
+            <input id="gpsCoordinates" name="gpsCoordinates" type="text" required>
+            <button type="button" id="getLocationBtn" class="btn-secondary whitespace-nowrap">الموقع</button>
+          </div>
         </div>
+        <div><label for="collectionDate">تاريخ الجمع *</label><input id="collectionDate" name="collectionDate" type="date" value="2025-10-05" required></div>
+        <div><label for="collectionTime">وقت الجمع *</label><input id="collectionTime" name="collectionTime" type="time" value="06:09" required></div>
+        <div><label for="collectorName">اسم الجامع *</label><input id="collectorName" name="collectorName" type="text" required></div>
+        <div><label for="notes">ملاحظات</label><textarea id="notes" name="notes" rows="3"></textarea></div>
       </div>
-    </body>
-    </html>
+      <div class="mt-8 pt-6 border-t flex justify-end">
+        <button type="submit" class="btn-primary">حفظ البيانات محلياً</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg my-8">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">السجلات المحفوظة محلياً</h2>
+        <button id="syncBtn" class="btn-green">مزامنة البيانات مع الخادم</button>
+    </div>
+    <div id="records-list" class="space-y-3"></div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://taodxqtlkyhkupktliwv.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhb2R4cXRsa3loa3Vwa3RsaXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDkxMjUsImV4cCI6MjA3NDY4NTEyNX0.3_Lolpx49GZJAai8I5qQRHpD8fXnuOGKJKEhHmXH9Ps';
+    const form = document.getElementById('collectionForm');
+    const recordsList = document.getElementById('records-list');
+    const syncBtn = document.getElementById('syncBtn');
+    const syncStatus = document.getElementById('sync-status');
+    
+    const getRecords = () => JSON.parse(localStorage.getItem('offlineCollections') || '[]');
+    const saveRecords = (records) => localStorage.setItem('offlineCollections', JSON.stringify(records));
+
+    function renderRecords() {
+        const records = getRecords();
+        recordsList.innerHTML = '';
+        if (records.length === 0) {
+            recordsList.innerHTML = '<p class="text-center text-gray-500 py-4">لا توجد سجلات محفوظة.</p>';
+            return;
+        }
+        records.forEach(record => {
+            const syncedText = record.synced ? 'تمت المزامنة' : 'لم تتم المزامنة';
+            const syncedClass = record.synced ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+            const recordEl = document.createElement('div');
+            recordEl.className = 'p-4 border rounded-lg flex justify-between items-center';
+            recordEl.innerHTML = `
+                <div>
+                    <p class="font-bold">${record.plantName} - ${record.barcodeId}</p>
+                    <p class="text-sm text-gray-600">الكمية: ${record.quantity} ${record.unit} | بتاريخ: ${record.collectionDate}</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-xs px-2 py-1 rounded-full ${syncedClass}">${syncedText}</span>
+                    ${!record.synced ? `<button class="btn-red" onclick="deleteRecord('${record.localId}')">حذف</button>` : ''}
+                </div>
+            `;
+            recordsList.appendChild(recordEl);
+        });
+    }
+
+    window.deleteRecord = function(localId) {
+        if (!confirm('هل أنت متأكد من حذف هذا السجل المحلي؟')) return;
+        let records = getRecords();
+        records = records.filter(r => r.localId !== localId);
+        saveRecords(records);
+        renderRecords();
+    }
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        data.barcodeId = "BRC-1759575803145";
+        data.plantName = "زيتون";
+        data.scientificName = "olive";
+        data.localId = 'local-' + Date.now();
+        data.synced = false;
+
+        const records = getRecords();
+        records.push(data);
+        saveRecords(records);
+
+        alert('تم حفظ السجل محلياً بنجاح!');
+        form.reset();
+        document.getElementById('collectionDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('collectionTime').value = new Date().toTimeString().split(' ')[0].substring(0,5);
+        renderRecords();
+    });
+
+    syncBtn.addEventListener('click', async () => {
+        const records = getRecords();
+        const unsyncedRecords = records.filter(r => !r.synced);
+
+        if (unsyncedRecords.length === 0) {
+            syncStatus.textContent = 'لا توجد بيانات للمزامنة';
+            setTimeout(() => syncStatus.textContent = '', 3000);
+            return;
+        }
+
+        if (!navigator.onLine) {
+            syncStatus.textContent = 'أنت غير متصل بالإنترنت!';
+            syncStatus.style.color = 'red';
+            setTimeout(() => { syncStatus.textContent = ''; syncStatus.style.color = ''; }, 3000);
+            return;
+        }
+
+        syncBtn.disabled = true;
+        syncBtn.textContent = 'جاري المزامنة...';
+        syncStatus.textContent = 'جاري المزامنة...';
+        syncStatus.style.color = 'orange';
+
+        let successCount = 0;
+        for (const record of unsyncedRecords) {
+            const supabaseRecord = {
+                barcode_id: record.barcodeId,
+                plant_type: record.plantName,
+                scientific_name: record.scientificName,
+                location: `${record.locationName} (${record.gpsCoordinates})`,
+                collection_date: record.collectionDate,
+                collection_time: record.collectionTime,
+                quantity: record.quantity,
+                unit: record.unit,
+                quality: 'جيد', // Default, as it's not in the simple form
+                collector: record.collectorName,
+                notes: record.notes,
+                status: 'قيد المعالجة'
+            };
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/seed_collections`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify(supabaseRecord)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to sync record ${record.barcodeId}: ${response.statusText}`);
+                }
+                
+                const originalRecord = records.find(r => r.localId === record.localId);
+                if (originalRecord) {
+                    originalRecord.synced = true;
+                }
+                successCount++;
+
+            } catch (error) {
+                console.error(error);
+                syncStatus.textContent = `فشل مزامنة بعض السجلات. ${error.message}`;
+                syncStatus.style.color = 'red';
+                // Stop on first error to avoid data issues
+                break; 
+            }
+        }
+
+        saveRecords(records);
+        renderRecords();
+        
+        if (successCount === unsyncedRecords.length) {
+            syncStatus.textContent = 'تمت المزامنة بنجاح!';
+            syncStatus.style.color = 'green';
+        }
+
+        setTimeout(() => { syncStatus.textContent = ''; syncStatus.style.color = ''; }, 5000);
+        syncBtn.disabled = false;
+        syncBtn.textContent = 'مزامنة البيانات مع الخادم';
+    });
+
+    document.getElementById('getLocationBtn').addEventListener('click', () => {
+        const gpsInput = document.getElementById('gpsCoordinates');
+        if (!navigator.geolocation) {
+            alert('خاصية تحديد الموقع غير مدعومة.');
+            return;
+        }
+        document.getElementById('getLocationBtn').textContent = 'جاري...';
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                gpsInput.value = position.coords.latitude.toFixed(5) + ', ' + position.coords.longitude.toFixed(5);
+                document.getElementById('getLocationBtn').textContent = 'الموقع';
+            },
+            (error) => {
+                alert('فشل الحصول على الموقع. يرجى إدخاله يدوياً.');
+                document.getElementById('getLocationBtn').textContent = 'الموقع';
+            },
+            { enableHighAccuracy: true }
+        );
+    });
+
+    // Initial render
+    renderRecords();
+  </script>
+</body>
+</html>
     
