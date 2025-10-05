@@ -189,8 +189,8 @@
 <script>
   // --- INJECTED DATA ---
   const encodedData = 'eJw1zT1uwkAQhuG7bJ1Bs9kde50KgShoKLjB7O4YVvIPsg0Noo0ijpIyp8G3iWM57Tzz6rsrz11oo%2Byj%2BlCb4xZ0TgXl5NBoS%2BpNXSpuhlmdJ2tYI5TGebDOBnAFCmBWEiNqh5b%2FgwPXMiWvn%2FH5%2Bh6%2Fxs8J%2BpCkGVKZwqJtlW4ywbWXbl4onEXKOIN3bSLYwBo8lwKkAwbjSXIXl%2F9dzamakp45rthf%2B7M0Ma1Pf%2BdVaGv1%2BAVXDUSg';
-  const supabaseUrl = 'https://taodxqtlkyhkupktliwv.supabase.co';
-  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhb2R4cXRsa3loa3Vwa3RsaXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDkxMjUsImV4cCI6MjA3NDY4NTEyNX0.3_Lolpx49GZJAai8I5qQRHpD8fXnuOGKJKEhHmXH9Ps';
+  const SUPABASE_URL = 'https://taodxqtlkyhkupktliwv.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhb2R4cXRsa3loa3Vwa3RsaXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDkxMjUsImV4cCI6MjA3NDY4NTEyNX0.3_Lolpx49GZJAai8I5qQRHpD8fXnuOGKJKEhHmXH9Ps';
 
   // --- CONFIG ---
   const EQUIPMENT_LIST = [
@@ -256,16 +256,19 @@
     form.reset();
     for (const key in data) {
         if (form.elements[key]) {
-            if (form.elements[key].type === 'checkbox') {
-                 // Handled separately for equipment
-            } else {
+             if (typeof data[key] === 'object' && form.elements[key].type !== 'select-one') {
+                // Skip objects like equipmentUsed
+            } else if (form.elements[key].type === 'checkbox') {
+                // skip for now
+            }
+            else {
                 form.elements[key].value = data[key];
             }
         }
     }
-    const equipmentUsed = data.equipmentUsed || [];
+    const equipmentUsed = data.equipmentUsed || {};
     document.querySelectorAll('#equipment-list input[type="checkbox"]').forEach(checkbox => {
-        checkbox.checked = equipmentUsed.includes(checkbox.name);
+        checkbox.checked = equipmentUsed[checkbox.name]?.used || false;
     });
     const tempMsg = document.createElement('div');
     tempMsg.textContent = 'تم ملء النموذج ببيانات السجل المحفوظ.';
@@ -319,34 +322,97 @@
 
   async function syncPendingCollections() {
     if (!isOnline || isSyncing) return;
-    isSyncing = true;
-    updateSyncUI();
-    const unsynced = await db.offlineCollections.where('synced').equals(0).toArray();
-    if (unsynced.length === 0) {
-      isSyncing = false; lastSync = new Date(); updateSyncUI(); renderLocalRecords();
+    
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      console.log("Supabase sync is not configured. Skipping sync.");
+      setStatusMessage('مزامنة Supabase غير مهيأة.', 'info');
       return;
     }
-    for (const item of unsynced) {
-      const d = item.data;
-      const record = {
-        user_id: d.userId, barcode_id: d.barcodeId, plant_id: d.plantId, plant_type: d.plantName, scientific_name: d.scientificName,
-        quantity: d.quantity ? parseFloat(d.quantity) : null, unit: d.unit, quality: d.qualityLevel, collection_date: d.collectionDate,
-        collection_time: d.collectionTime, location: d.locationName, gps_coordinates: d.gpsCoordinates, 
-        temperature: d.temperature ? parseFloat(d.temperature) : null, weather_condition: d.weatherCondition, 
-        collector: d.collectorName, team: d.team, collection_method: d.collectionMethod, seed_maturity: d.seedMaturity,
-        notes: ((d.generalNotes || '') + '\n' + (d.plantEnvironmentNotes || '')).trim(), status: 'قيد المعالجة',
-      };
-      try {
-        const response = await fetch(supabaseUrl + '/rest/v1/seed_collections', {
-          method: 'POST',
-          headers: { 'apikey': supabaseAnonKey, 'Authorization': 'Bearer ' + supabaseAnonKey, 'Content-Type': 'application/json' },
-          body: JSON.stringify(record)
-        });
-        if (response.ok) { if(item.id) await db.offlineCollections.update(item.id, { synced: true }); }
-        else { console.error('Sync error for item ' + item.id + ':', await response.json()); }
-      } catch (e) { console.error('Network error during sync:', e); break; }
+
+    isSyncing = true;
+    updateSyncUI();
+    
+    const unsynced = await db.offlineCollections.where('synced').equals(0).toArray();
+    if (unsynced.length === 0) {
+      isSyncing = false;
+      lastSync = new Date();
+      updateSyncUI();
+      await renderLocalRecords();
+      return;
     }
-    isSyncing = false; lastSync = new Date(); await updatePendingCount(); await renderLocalRecords();
+
+    const url = `${SUPABASE_URL}/rest/v1/seed_collections`;
+    const headers = {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal',
+    };
+    
+    let successCount = 0;
+    try {
+      for (const item of unsynced) {
+        const d = item.data;
+        const equipmentUsed = Object.keys(d.equipmentUsed || {})
+            .filter(key => d.equipmentUsed[key].used)
+            .map(key => EQUIPMENT_LIST.find(e => e.id === key)?.name)
+            .filter(Boolean);
+
+        const notes = `${d.generalNotes || ''}
+${d.plantEnvironmentNotes || ''}
+${equipmentUsed.length > 0 ? 'المعدات المستخدمة: ' + equipmentUsed.join(', ') : ''}`.trim();
+
+        const record = {
+            user_id: d.userId,
+            barcode_id: d.barcodeId,
+            plant_id: d.plantId,
+            plant_type: d.plantName,
+            scientific_name: d.scientificName,
+            quantity: d.quantity ? parseFloat(d.quantity) : null,
+            unit: d.unit,
+            quality: d.qualityLevel,
+            collection_date: d.collectionDate,
+            collection_time: d.collectionTime,
+            location: d.locationName,
+            gps_coordinates: d.gpsCoordinates,
+            temperature: d.temperature ? parseFloat(d.temperature) : null,
+            weather_condition: d.weatherCondition,
+            collector: d.collectorName,
+            team: d.team,
+            collection_method: d.collectionMethod,
+            seed_maturity: d.seedMaturity,
+            notes: notes,
+            status: 'قيد المعالجة',
+        };
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(record),
+        });
+
+        if (!response.ok) {
+           console.error('Sync error for item ' + item.id + ':', await response.text());
+        } else {
+          if(item.id) {
+            await db.offlineCollections.update(item.id, { synced: true });
+            successCount++;
+          }
+        }
+      }
+      lastSync = new Date();
+      if (successCount > 0) {
+          setStatusMessage(`تمت مزامنة ${successCount} سجل بنجاح!`, 'success');
+      }
+    } catch (e) {
+      console.error("Error during Supabase sync:", e);
+      setStatusMessage('فشل المزامنة مع Supabase.', 'error');
+    } finally {
+      isSyncing = false;
+      await updatePendingCount();
+      await renderLocalRecords();
+      updateSyncUI();
+    }
   }
   
   function updateSyncUI() {
@@ -372,11 +438,15 @@
     
     const formData = new FormData(form);
     const dataToSave = { ...baseData, collectedAt: new Date().toISOString() };
-    for (const [key, value] of formData.entries()) { dataToSave[key] = value; }
-    const equipmentUsed = [];
-    document.querySelectorAll('#equipment-list input[type="checkbox"]').forEach(checkbox => {
-      if (checkbox.checked) { equipmentUsed.push(checkbox.name); }
-    });
+    const equipmentUsed = {};
+    for (const [key, value] of formData.entries()) {
+       if (key.startsWith('equip-')) {
+            const equipId = key.replace('equip-', '');
+            equipmentUsed[equipId] = { used: value === 'on' };
+       } else {
+            dataToSave[key] = value;
+       }
+    }
     dataToSave['equipmentUsed'] = equipmentUsed;
 
     try {
@@ -391,7 +461,6 @@
       await updatePendingCount();
       await renderLocalRecords();
       
-      // Auto-sync to Supabase if online
       if (isOnline) {
         syncPendingCollections();
       }
@@ -455,7 +524,7 @@
   function renderEquipment() {
     const container = document.getElementById('equipment-list');
     EQUIPMENT_LIST.forEach(function(equip) {
-      container.innerHTML += `<div class="flex items-center gap-2" style="border: 1px solid var(--color-border); padding: 0.75rem; border-radius: 0.5rem;"><input type="checkbox" id="equip-${equip.id}" name="${equip.id}" style="width: 1rem; height: 1rem;"><label for="equip-${equip.id}" style="font-weight: 500;">${equip.name}</label></div>`;
+      container.innerHTML += `<div class="flex items-center gap-2" style="border: 1px solid var(--color-border); padding: 0.75rem; border-radius: 0.5rem;"><input type="checkbox" id="equip-${equip.id}" name="equip-${equip.id}" style="width: 1rem; height: 1rem;"><label for="equip-${equip.id}" style="font-weight: 500;">${equip.name}</label></div>`;
     });
   }
 
