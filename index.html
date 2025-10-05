@@ -115,7 +115,7 @@
                     </button>
                   </div>
                 </div>
-                <div><label for="temperature">درجة الحرارة (مْ)</label><input id="temperature" name="temperature" type="number"></div>
+                <div><label for="temperature">درجة الحرارة (مْ)</label><input id="temperature" name="temperature" type="number" step="any"></div>
                 <div>
                   <label for="weatherCondition">حالة الطقس</label>
                   <select id="weatherCondition" name="weatherCondition">
@@ -237,18 +237,31 @@
       const d = item.data;
       const record = {
         barcode_id: d.barcodeId, plant_id: d.plantId, plant_type: d.plantName, scientific_name: d.scientificName,
-        quantity: d.quantity, unit: d.unit, quality: d.qualityLevel, collection_date: d.collectionDate,
-        collection_time: d.collectionTime, location: d.locationName, gps_coordinates: d.gpsCoordinates, 
-        temperature: d.temperature, weather_condition: d.weatherCondition, collector: d.collectorName,
-        team: d.team, collection_method: d.collectionMethod, seed_maturity: d.seedMaturity,
-        notes: `${d.generalNotes || ''}\n${d.plantEnvironmentNotes || ''}`.trim(),
+        quantity: d.quantity ? parseFloat(d.quantity) : null, 
+        unit: d.unit, 
+        quality: d.qualityLevel, 
+        collection_date: d.collectionDate,
+        collection_time: d.collectionTime, 
+        location: d.locationName, 
+        gps_coordinates: d.gpsCoordinates, 
+        temperature: d.temperature ? parseFloat(d.temperature) : null, 
+        weather_condition: d.weatherCondition, 
+        collector: d.collectorName,
+        team: d.team, 
+        collection_method: d.collectionMethod, 
+        seed_maturity: d.seedMaturity,
+        notes: ((d.generalNotes || '') + '\n' + (d.plantEnvironmentNotes || '')).trim(),
         status: 'قيد المعالجة',
       };
       
       try {
-        const response = await fetch(`${supabaseUrl}/rest/v1/seed_collections`, {
+        const response = await fetch(supabaseUrl + '/rest/v1/seed_collections', {
           method: 'POST',
-          headers: { 'apikey': supabaseAnonKey, 'Authorization': `Bearer ${supabaseAnonKey}`, 'Content-Type': 'application/json' },
+          headers: { 
+            'apikey': supabaseAnonKey, 
+            'Authorization': 'Bearer ' + supabaseAnonKey, 
+            'Content-Type': 'application/json' 
+          },
           body: JSON.stringify(record)
         });
         if (response.ok) {
@@ -273,23 +286,23 @@
     const onlineSubtext = isOnline ? 'المزامنة التلقائية مفعلة.' : 'سيتم حفظ البيانات محلياً.';
     const onlineColor = isOnline ? 'text-green' : 'text-red';
     
-    const syncButtonContent = isSyncing ? `${ICONS.spinner}<span>جاري المزامنة...</span>` : `${ICONS.refresh}<span>مزامنة الآن</span>`;
+    const syncButtonContent = isSyncing ? ICONS.spinner + '<span>جاري المزامنة...</span>' : ICONS.refresh + '<span>مزامنة الآن</span>';
 
-    syncHeader.innerHTML = `
-      <div class="flex justify-between items-center gap-4" style="flex-wrap: wrap;">
-        <div class="flex items-center gap-2">
-          ${onlineIcon}
-          <div>
-            <p class="font-semibold ${onlineColor}">${onlineText}</p>
-            <p style="font-size: 0.75rem; color: var(--color-text-muted);">${onlineSubtext}</p>
-          </div>
-        </div>
-        <div style="text-align: center;"><p class="font-semibold">${pendingCount}</p><p style="font-size: 0.75rem; color: var(--color-text-muted);">بانتظار المزامنة</p></div>
-        <div style="text-align: center;"><p class="font-semibold">${lastSync ? lastSync.toLocaleTimeString('ar-EG') : 'لم تتم'}</p><p style="font-size: 0.75rem; color: var(--color-text-muted);">آخر مزامنة</p></div>
-        <button id="syncNowBtn" ${!isOnline || isSyncing ? 'disabled' : ''} class="btn btn-primary">${syncButtonContent}</button>
-      </div>`;
+    syncHeader.innerHTML = 
+      '<div class="flex justify-between items-center gap-4" style="flex-wrap: wrap;">' +
+        '<div class="flex items-center gap-2">' +
+          onlineIcon +
+          '<div>' +
+            '<p class="font-semibold ' + onlineColor + '">' + onlineText + '</p>' +
+            '<p style="font-size: 0.75rem; color: var(--color-text-muted);">' + onlineSubtext + '</p>' +
+          '</div>' +
+        '</div>' +
+        '<div style="text-align: center;"><p class="font-semibold">' + pendingCount + '</p><p style="font-size: 0.75rem; color: var(--color-text-muted);">بانتظار المزامنة</p></div>' +
+        '<div style="text-align: center;"><p class="font-semibold">' + (lastSync ? lastSync.toLocaleTimeString('ar-EG') : 'لم تتم') + '</p><p style="font-size: 0.75rem; color: var(--color-text-muted);">آخر مزامنة</p></div>' +
+        '<button id="syncNowBtn" ' + (!isOnline || isSyncing ? 'disabled' : '') + ' class="btn btn-primary">' + syncButtonContent + '</button>' +
+      '</div>';
     
-    syncHeader.style.borderLeft = `4px solid ${isOnline ? 'var(--color-green)' : 'var(--color-red)'}`;
+    syncHeader.style.borderLeft = '4px solid ' + (isOnline ? 'var(--color-green)' : 'var(--color-red)');
     document.getElementById('syncNowBtn').addEventListener('click', syncPendingCollections);
   }
 
@@ -355,7 +368,7 @@
       async (position) => {
         try {
             const { latitude, longitude } = position.coords;
-            document.getElementById('gpsCoordinates').value = `${longitude.toFixed(5)}_${latitude.toFixed(5)}`;
+            document.getElementById('gpsCoordinates').value = longitude.toFixed(5) + '_' + latitude.toFixed(5);
             
             if (!navigator.onLine) {
                 alert('أنت غير متصل بالإنترنت. تم تحديد الإحداثيات فقط.');
@@ -363,8 +376,8 @@
             }
 
             const [geoRes, weatherRes] = await Promise.all([
-                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ar`),
-                fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`)
+                fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + latitude + '&lon=' + longitude + '&accept-language=ar'),
+                fetch('https://api.open-meteo.com/v1/forecast?latitude=' + latitude + '&longitude=' + longitude + '&current=temperature_2m,weather_code')
             ]);
 
             if (!geoRes.ok || !weatherRes.ok) throw new Error('فشل جلب بيانات الموقع أو الطقس.');
@@ -403,12 +416,11 @@
   function renderEquipment() {
     const container = document.getElementById('equipment-list');
     EQUIPMENT_LIST.forEach(equip => {
-      container.innerHTML += `
-        <div class="flex items-center gap-2" style="border: 1px solid var(--color-border); padding: 0.75rem; border-radius: 0.5rem;">
-          <input type="checkbox" id="equip-${equip.id}" name="${equip.id}" style="width: 1rem; height: 1rem;">
-          <label for="equip-${equip.id}" style="font-weight: 500;">${equip.name}</label>
-        </div>
-      `;
+      container.innerHTML += 
+        '<div class="flex items-center gap-2" style="border: 1px solid var(--color-border); padding: 0.75rem; border-radius: 0.5rem;">' +
+          '<input type="checkbox" id="equip-' + equip.id + '" name="' + equip.id + '" style="width: 1rem; height: 1rem;">' +
+          '<label for="equip-' + equip.id + '" style="font-weight: 500;">' + equip.name + '</label>' +
+        '</div>';
     });
   }
 
