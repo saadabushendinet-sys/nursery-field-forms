@@ -251,8 +251,7 @@
           collection_time: d.collectionTime, location: d.locationName, gps_coordinates: d.gpsCoordinates,
           temperature: d.temperature ? parseFloat(d.temperature) : null, weather_condition: d.weatherCondition,
           collector: d.collectorName, team: d.team, collection_method: d.collectionMethod,
-          seed_maturity: d.seedMaturity,
-          notes: `${d.generalNotes || ''}\n${d.plantEnvironmentNotes || ''}`.trim(), status: 'قيد المعالجة'
+          seed_maturity: d.seedMaturity, notes: d.notes, status: 'قيد المعالجة'
         };
     });
 
@@ -287,10 +286,38 @@
     saveBtn.innerHTML = ICONS.spinner + '<span>جاري الحفظ...</span>';
     
     const formData = new FormData(form);
-    const dataToSave = { ...baseData, collectedAt: new Date().toISOString() };
-    for (const [key, value] of formData.entries()) {
-       dataToSave[key] = value;
-    }
+    const formObject = Object.fromEntries(formData.entries());
+
+    const usedEquipmentNames = EQUIPMENT_LIST
+        .filter(e => form.elements[`equip-${e.id}`].checked)
+        .map(e => e.name);
+
+    const equipmentNotes = usedEquipmentNames.length > 0 ? `المعدات المستخدمة: ${usedEquipmentNames.join(', ')}` : '';
+
+    const combinedNotes = [
+        formObject['generalNotes'],
+        formObject['plantEnvironmentNotes'],
+        equipmentNotes
+    ].filter(Boolean).join('\n\n');
+
+    const dataToSave = {
+        ...baseData,
+        collectedAt: new Date().toISOString(),
+        quantity: formObject.quantity,
+        unit: formObject.unit,
+        qualityLevel: formObject.qualityLevel,
+        locationName: formObject.locationName,
+        gpsCoordinates: formObject.gpsCoordinates,
+        collectionDate: formObject.collectionDate,
+        collectionTime: formObject.collectionTime,
+        temperature: formObject.temperature,
+        weatherCondition: formObject.weatherCondition,
+        collectorName: formObject.collectorName,
+        team: formObject.team,
+        collectionMethod: formObject.collectionMethod,
+        seedMaturity: formObject.seedMaturity,
+        notes: combinedNotes
+    };
 
     try {
       await db.offlineCollections.add({ data: dataToSave, synced: false });
@@ -301,6 +328,7 @@
       await updateSyncUI();
       handleSync(); // Attempt to sync immediately after saving
     } catch (e) {
+      console.error("Save error:", e);
       setStatusMessage("فشل حفظ البيانات محلياً.", 'error');
     } finally {
       saveBtn.disabled = false;
