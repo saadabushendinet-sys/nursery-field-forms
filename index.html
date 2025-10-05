@@ -90,8 +90,8 @@
                     <div class="flex"><input id="quantity" name="quantity" type="number" value="1" min="0.01" step="0.01" required><select name="unit"><option value="kg">كيلو</option><option value="g">جرام</option></select></div>
                 </div>
                 <div>
-                    <label for="quality">الجودة *</label>
-                    <select id="quality" name="quality" required><option>ممتاز</option><option>جيد جداً</option><option>جيد</option><option>متوسط</option><option>ضعيف</option></select>
+                    <label for="qualityLevel">الجودة *</label>
+                    <select id="qualityLevel" name="qualityLevel" required><option>ممتاز</option><option>جيد جداً</option><option>جيد</option><option>متوسط</option><option>ضعيف</option></select>
                 </div>
                 <div><label for="collectionDate">تاريخ الجمع *</label><input id="collectionDate" name="collectionDate" type="date" required></div>
                 <div><label for="collectionTime">وقت الجمع *</label><input id="collectionTime" name="collectionTime" type="time" required></div>
@@ -102,13 +102,13 @@
               <legend>3. معلومات الموقع</legend>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label for="location">اسم الموقع *</label>
-                  <input id="location" name="location" type="text" required>
+                  <label for="locationName">اسم الموقع *</label>
+                  <input id="locationName" name="locationName" type="text" required>
                 </div>
                 <div>
                   <label for="gpsCoordinates">الإحداثيات (GPS)</label>
                   <div class="flex items-center gap-2">
-                    <input id="gpsCoordinates" name="gpsCoordinates" type="text" placeholder="24.7136, 46.6753">
+                    <input id="gpsCoordinates" name="gpsCoordinates" type="text" placeholder="46.6753_24.7136">
                     <button type="button" id="getLocationBtn" class="btn btn-primary" style="flex-shrink: 0;">
                       <span id="location-icon-wrapper"></span>
                       <span>الموقع</span>
@@ -116,14 +116,19 @@
                   </div>
                 </div>
                 <div><label for="temperature">درجة الحرارة (مْ)</label><input id="temperature" name="temperature" type="number"></div>
-                <div><label for="weatherCondition">حالة الطقس</label><select id="weatherCondition" name="weatherCondition"><option>مشمس</option><option>غائم</option></select></div>
+                <div>
+                  <label for="weatherCondition">حالة الطقس</label>
+                  <select id="weatherCondition" name="weatherCondition">
+                    <option>صافٍ</option><option>مشمس</option><option>غائم جزئياً</option><option>غائم</option><option>ضباب</option><option>مطر خفيف</option><option>مطر</option><option>مطر غزير</option><option>عاصفة رعدية</option><option>ثلج</option><option>مغبر</option>
+                  </select>
+                </div>
               </div>
           </fieldset>
 
           <fieldset>
               <legend>4. فريق العمل والمعدات</legend>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label for="collector">اسم الجامع *</label><input id="collector" name="collector" type="text" required></div>
+                <div><label for="collectorName">اسم الجامع *</label><input id="collectorName" name="collectorName" type="text" required></div>
                 <div><label for="team">الفريق</label><input id="team" name="team" type="text"></div>
                 <div><label for="collectionMethod">طريقة الجمع</label><input id="collectionMethod" name="collectionMethod" type="text"></div>
                 <div><label for="seedMaturity">نضج البذور</label><input id="seedMaturity" name="seedMaturity" type="text"></div>
@@ -232,11 +237,11 @@
       const d = item.data;
       const record = {
         barcode_id: d.barcodeId, plant_id: d.plantId, plant_type: d.plantName, scientific_name: d.scientificName,
-        quantity: d.quantity, unit: d.unit, quality: d.quality, collection_date: d.collectionDate,
-        collection_time: d.collectionTime, location: d.location, gps_coordinates: d.gpsCoordinates, 
-        temperature: d.temperature, weather_condition: d.weatherCondition, collector: d.collector,
+        quantity: d.quantity, unit: d.unit, quality: d.qualityLevel, collection_date: d.collectionDate,
+        collection_time: d.collectionTime, location: d.locationName, gps_coordinates: d.gpsCoordinates, 
+        temperature: d.temperature, weather_condition: d.weatherCondition, collector: d.collectorName,
         team: d.team, collection_method: d.collectionMethod, seed_maturity: d.seedMaturity,
-        notes: `${d.generalNotes}\n${d.plantEnvironmentNotes}`.trim(),
+        notes: `${d.generalNotes || ''}\n${d.plantEnvironmentNotes || ''}`.trim(),
         status: 'قيد المعالجة',
       };
       
@@ -325,6 +330,18 @@
       alert("فشل حفظ البيانات محلياً.");
     }
   }
+  
+  function mapWeatherCode(code) {
+      if (code === 0) return 'صافٍ';
+      if (code >= 1 && code <= 3) return 'غائم جزئياً';
+      if (code === 45 || code === 48) return 'ضباب';
+      if (code >= 51 && code <= 57) return 'مطر خفيف';
+      if (code >= 61 && code <= 67) return 'مطر';
+      if (code >= 80 && code <= 82) return 'مطر غزير';
+      if (code >= 71 && code <= 77) return 'ثلج';
+      if (code >= 95 && code <= 99) return 'عاصفة رعدية';
+      return 'مشمس'; // Default
+  }
 
   function handleGetLocation() {
     if (!navigator.geolocation) {
@@ -335,32 +352,51 @@
     getLocationBtn.disabled = true;
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const coords = `${position.coords.latitude.toFixed(5)}, ${position.coords.longitude.toFixed(5)}`;
-        document.getElementById('gpsCoordinates').value = coords;
-        locationIconWrapper.innerHTML = ICONS.mapPin;
-        getLocationBtn.disabled = false;
+      async (position) => {
+        try {
+            const { latitude, longitude } = position.coords;
+            document.getElementById('gpsCoordinates').value = `${longitude.toFixed(5)}_${latitude.toFixed(5)}`;
+            
+            if (!navigator.onLine) {
+                alert('أنت غير متصل بالإنترنت. تم تحديد الإحداثيات فقط.');
+                return; 
+            }
+
+            const [geoRes, weatherRes] = await Promise.all([
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ar`),
+                fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`)
+            ]);
+
+            if (!geoRes.ok || !weatherRes.ok) throw new Error('فشل جلب بيانات الموقع أو الطقس.');
+
+            const geoData = await geoRes.json();
+            const weatherData = await weatherRes.json();
+
+            document.getElementById('locationName').value = geoData.display_name || '';
+            document.getElementById('temperature').value = weatherData.current.temperature_2m;
+            document.getElementById('weatherCondition').value = mapWeatherCode(weatherData.current.weather_code);
+
+        } catch (error) {
+            console.error('Error fetching location/weather details:', error);
+            alert('لم نتمكن من جلب اسم الموقع والطقس تلقائياً. تم تحديد الإحداثيات فقط.');
+        } finally {
+            locationIconWrapper.innerHTML = ICONS.mapPin;
+            getLocationBtn.disabled = false;
+        }
       },
       (error) => {
-        let errorMessage;
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = 'تم رفض إذن الوصول إلى الموقع.';
-            alert(errorMessage);
-            break;
-          case error.POSITION_UNAVAILABLE:
-            console.error("Location information is unavailable.");
-            break;
-          case error.TIMEOUT:
-             errorMessage = 'انتهت مهلة طلب الموقع. يرجى المحاولة مرة أخرى.';
-             alert(errorMessage);
-            break;
+        let errorMessage = 'لا يمكن الحصول على الموقع الحالي. يرجى إدخاله يدوياً.';
+        switch(error.code) {
+            case error.PERMISSION_DENIED: errorMessage = 'تم رفض إذن الوصول إلى الموقع.'; break;
+            case error.POSITION_UNAVAILABLE: errorMessage = 'معلومات الموقع غير متاحة.'; break;
+            case error.TIMEOUT: errorMessage = 'انتهت مهلة طلب الموقع.'; break;
         }
+        alert(errorMessage);
         console.error('Geolocation Error:', error.message);
         locationIconWrapper.innerHTML = ICONS.mapPin;
         getLocationBtn.disabled = false;
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   }
   
@@ -385,7 +421,7 @@
     
     // --- DATABASE SETUP ---
     db = new Dexie('NurseryDB');
-    db.version(1).stores({ offlineCollections: '++id, synced' });
+    db.version(1).stores({ offlineCollections: '++id, synced, *data.barcodeId' });
 
     // Assign UI elements
     form = document.getElementById('collectionForm');
@@ -418,7 +454,7 @@
 
     form.addEventListener('submit', handleFormSubmit);
     getLocationBtn.addEventListener('click', handleGetLocation);
-    window.addEventListener('online', () => { isOnline = true; syncPendingCollections(); });
+    window.addEventListener('online', () => { isOnline = true; updateSyncUI(); syncPendingCollections(); });
     window.addEventListener('offline', () => { isOnline = false; updateSyncUI(); });
   });
 </script>
