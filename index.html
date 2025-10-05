@@ -84,7 +84,10 @@
         <svg id="records-chevron" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s;"><path d="m6 9 6 6 6-6"/></svg>
       </div>
       <div id="local-records-container" style="padding: 0 1.5rem 1.5rem; display: none; border-top: 1px solid var(--color-border);">
-          <div id="local-records-list" style="padding-top: 1.5rem;">
+          <div style="display: flex; justify-content: flex-end; padding-top: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem; margin-bottom: 1rem;">
+            <button id="clearSyncedBtn" class="btn" style="background-color: var(--color-red); color: white;">حذف السجلات المتزامنة</button>
+          </div>
+          <div id="local-records-list">
               <p style="text-align: center; color: var(--color-text-muted); padding: 1rem 0;">جاري تحميل السجلات...</p>
           </div>
       </div>
@@ -109,7 +112,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label for="quantity">الكمية *</label>
-                    <div class="flex"><input id="quantity" name="quantity" type="number" value="1" min="0.01" step="0.01" required><select name="unit"><option value="kg">كيلو</option><option value="g">جرام</option></select></div>
+                    <div class="flex"><input id="quantity" name="quantity" type="number" value="1" min="0.01" step="0.01" required><select name="unit" id="unit"><option value="kg">كيلو</option><option value="g">جرام</option></select></div>
                 </div>
                 <div>
                     <label for="qualityLevel">الجودة *</label>
@@ -219,7 +222,7 @@
   let db;
 
   // --- UI ELEMENTS ---
-  let form, formContainer, errorContainer, errorMessage, syncHeader, saveSuccessMsg, getLocationBtn, locationIconWrapper, recordsToggle, recordsContainer, recordsChevron;
+  let form, formContainer, errorContainer, errorMessage, syncHeader, saveSuccessMsg, getLocationBtn, locationIconWrapper, recordsToggle, recordsContainer, recordsChevron, clearSyncedBtn;
 
   function showError(message) {
       formContainer.classList.add('hidden');
@@ -243,10 +246,48 @@
     updateSyncUI();
   }
   
+  function populateFormFromRecord(data) {
+    if (!data) return;
+
+    // Reset form to clear previous state before populating
+    form.reset();
+    
+    // Explicitly set values for each field
+    document.getElementById('quantity').value = data.quantity || '';
+    document.getElementById('unit').value = data.unit || 'kg';
+    document.getElementById('qualityLevel').value = data.qualityLevel || 'جيد';
+    document.getElementById('locationName').value = data.locationName || '';
+    document.getElementById('gpsCoordinates').value = data.gpsCoordinates || '';
+    document.getElementById('collectionDate').value = data.collectionDate || new Date().toISOString().split('T')[0];
+    document.getElementById('collectionTime').value = data.collectionTime || new Date().toTimeString().split(' ')[0].substring(0,5);
+    document.getElementById('temperature').value = data.temperature || '';
+    document.getElementById('weatherCondition').value = data.weatherCondition || 'مشمس';
+    document.getElementById('collectorName').value = data.collectorName || '';
+    document.getElementById('team').value = data.team || '';
+    document.getElementById('collectionMethod').value = data.collectionMethod || '';
+    document.getElementById('seedMaturity').value = data.seedMaturity || '';
+    document.getElementById('generalNotes').value = data.generalNotes || '';
+    document.getElementById('plantEnvironmentNotes').value = data.plantEnvironmentNotes || '';
+
+    // Populate checkboxes
+    const equipmentUsed = data.equipmentUsed || [];
+    document.querySelectorAll('#equipment-list input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = equipmentUsed.includes(checkbox.name);
+    });
+
+    // Add a visual confirmation message
+    const tempMsg = document.createElement('div');
+    tempMsg.textContent = 'تم ملء النموذج ببيانات السجل المحفوظ.';
+    tempMsg.style.cssText = 'background-color: #e0f2fe; color: #075985; padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; text-align: center;';
+    form.insertBefore(tempMsg, form.firstChild);
+    setTimeout(() => tempMsg.remove(), 3000);
+    form.scrollIntoView({ behavior: 'smooth' });
+  }
+
   async function renderLocalRecords() {
     const listContainer = document.getElementById('local-records-list');
     if (!listContainer) return;
-    listContainer.innerHTML = '<p>جاري تحميل السجلات...</p>';
+    listContainer.innerHTML = '<p style="text-align: center; color: var(--color-text-muted); padding: 1rem 0;">جاري تحميل السجلات...</p>';
 
     try {
       const records = await db.offlineCollections.orderBy('id').reverse().toArray();
@@ -255,28 +296,56 @@
         return;
       }
 
-      listContainer.innerHTML = records.map(function(record) {
+      listContainer.innerHTML = '';
+
+      records.forEach(function(record) {
         const d = record.data;
         const statusIcon = record.synced ? ICONS.synced : ICONS.pending;
         const statusText = record.synced ? 'تمت المزامنة' : 'بانتظار المزامنة';
         const statusBadgeClass = record.synced ? 'bg-green-light text-green-dark' : 'bg-yellow-light text-yellow-dark';
+        
+        const collectedDate = new Date(d.collectedAt || Date.now());
+        const displayDate = collectedDate.toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const displayTime = collectedDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-        return (
-          '<div class="local-record-item">' +
-            '<div>' +
-              '<p class="font-semibold">' + (d.plantName || 'N/A') + '</p>' +
-              '<p style="font-size: 0.75rem; color: var(--color-text-muted);">' + (d.collectionDate || 'N/A') + ' - ' + (d.quantity || 'N/A') + ' ' + (d.unit || '') + '</p>' +
-            '</div>' +
-            '<div class="status-badge ' + statusBadgeClass + '">' +
-              statusIcon + '<span>' + statusText + '</span>' +
-            '</div>' +
-          '</div>'
-        );
-      }).join('');
+        const itemEl = document.createElement('div');
+        itemEl.className = 'local-record-item';
+        itemEl.style.cursor = 'pointer';
+
+        itemEl.innerHTML = 
+          '<div>' +
+            '<p class="font-semibold">' + (d.plantName || 'N/A') + ' - ' + (d.quantity || 'N/A') + ' ' + (d.unit || '') + '</p>' +
+            '<p style="font-size: 0.75rem; color: var(--color-text-muted);">' + 
+              'وقت الحفظ: ' + displayDate + ' ' + displayTime +
+            '</p>' +
+          '</div>' +
+          '<div class="status-badge ' + statusBadgeClass + '">' +
+            statusIcon + '<span>' + statusText + '</span>' +
+          '</div>';
+        
+        itemEl.addEventListener('click', function() {
+          populateFormFromRecord(d);
+        });
+        
+        listContainer.appendChild(itemEl);
+      });
 
     } catch (e) {
       console.error('Failed to render local records:', e);
       listContainer.innerHTML = '<p class="text-red">فشل تحميل السجلات المحفوظة.</p>';
+    }
+  }
+
+  async function handleClearSynced() {
+    if (confirm('هل أنت متأكد من حذف جميع السجلات التي تمت مزامنتها؟ لا يمكن التراجع عن هذا الإجراء.')) {
+        try {
+            await db.offlineCollections.where('synced').equals(1).delete();
+            await updatePendingCount();
+            await renderLocalRecords();
+        } catch(e) {
+            console.error('Failed to clear synced records:', e);
+            alert('حدث خطأ أثناء حذف السجلات.');
+        }
     }
   }
 
@@ -292,14 +361,14 @@
       isSyncing = false;
       lastSync = new Date();
       updateSyncUI();
-      renderLocalRecords(); // Refresh list to show all synced
+      renderLocalRecords();
       return;
     }
 
     for (const item of unsynced) {
       const d = item.data;
       const record = {
-        user_id: d.userId, // Link to the user
+        user_id: d.userId,
         barcode_id: d.barcodeId, plant_id: d.plantId, plant_type: d.plantName, scientific_name: d.scientificName,
         quantity: d.quantity ? parseFloat(d.quantity) : null, 
         unit: d.unit, 
@@ -335,7 +404,7 @@
         }
       } catch (e) {
         console.error('Network error during sync:', e);
-        break; // Stop syncing on network error
+        break;
       }
     }
     
@@ -394,7 +463,6 @@
       await db.offlineCollections.add({ data: dataToSave, synced: false });
       saveSuccessMsg.classList.remove('hidden');
       form.reset();
-      // Reset defaults
       document.getElementById('collectionDate').value = new Date().toISOString().split('T')[0];
       document.getElementById('collectionTime').value = new Date().toTimeString().split(' ')[0].substring(0,5);
       document.getElementById('quantity').value = '1';
@@ -419,7 +487,7 @@
       if (code >= 80 && code <= 82) return 'مطر غزير';
       if (code >= 71 && code <= 77) return 'ثلج';
       if (code >= 95 && code <= 99) return 'عاصفة رعدية';
-      return 'مشمس'; // Default
+      return 'مشمس';
   }
 
   function handleGetLocation() {
@@ -492,17 +560,14 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     try {
-      // Check for required libraries
       if (typeof pako === 'undefined' || typeof Dexie === 'undefined') {
         showError('فشل تحميل المكتبات الأساسية. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.');
         return;
       }
       
-      // --- DATABASE SETUP ---
       db = new Dexie('NurseryDB');
       db.version(2).stores({ offlineCollections: '++id, synced' });
 
-      // Assign UI elements
       form = document.getElementById('collectionForm');
       formContainer = document.getElementById('form-container');
       errorContainer = document.getElementById('error-container');
@@ -514,6 +579,7 @@
       recordsToggle = document.getElementById('local-records-toggle');
       recordsContainer = document.getElementById('local-records-container');
       recordsChevron = document.getElementById('records-chevron');
+      clearSyncedBtn = document.getElementById('clearSyncedBtn');
 
       locationIconWrapper.innerHTML = ICONS.mapPin;
       renderEquipment();
@@ -531,7 +597,6 @@
       await renderLocalRecords();
       if (isOnline) syncPendingCollections();
 
-      // Event Listeners
       form.addEventListener('submit', handleFormSubmit);
       getLocationBtn.addEventListener('click', handleGetLocation);
       recordsToggle.addEventListener('click', () => {
@@ -539,6 +604,7 @@
         recordsContainer.style.display = isHidden ? 'block' : 'none';
         recordsChevron.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
       });
+      clearSyncedBtn.addEventListener('click', handleClearSynced);
       window.addEventListener('online', () => { isOnline = true; updateSyncUI(); syncPendingCollections(); });
       window.addEventListener('offline', () => { isOnline = false; updateSyncUI(); });
     } catch (e) {
