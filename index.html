@@ -25,11 +25,12 @@
     h1 { font-size: 1.5rem; line-height: 2rem; font-weight: 700; }
     p { color: var(--color-text-muted); }
     .grid { display: grid; gap: 1rem; }
+    .grid-cols-1 { grid-template-columns: 1fr; }
     .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .col-span-2 { grid-column: span 2 / span 2; }
     label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; }
-    input[type="text"], input[type="number"], input[type="date"], input[type="time"], select {
+    input[type="text"], input[type="number"], input[type="date"], input[type="time"], select, textarea {
       width: 100%; box-sizing: border-box; background-color: #f9fafb;
       border: 1px solid var(--color-border); border-radius: 0.5rem;
       padding: 0.625rem; font-size: 0.875rem;
@@ -58,10 +59,9 @@
     .font-semibold { font-weight: 600; }
     fieldset { border: none; border-top: 1px solid var(--color-border); padding: 1.5rem 0 0 0; margin-top: 1.5rem; }
     legend { font-size: 1.125rem; font-weight: 600; padding: 0 0.5rem; margin-right: -0.5rem; }
-    @media (max-width: 640px) {
-      body { padding: 0.5rem; } .p-6 { padding: 1rem; }
-      .grid-cols-2, .grid-cols-3 { grid-template-columns: 1fr; }
-      .col-span-2 { grid-column: auto; }
+    @media (min-width: 768px) {
+      .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .md\:col-span-2 { grid-column: span 2 / span 2; }
     }
   </style>
 </head>
@@ -74,42 +74,74 @@
       <p class="mb-6">قم بتعبئة الحقول التالية ثم اضغط على "حفظ البيانات" لحفظ المعلومات محلياً.</p>
       <form id="collectionForm">
         <fieldset>
-          <legend>المعلومات الأساسية</legend>
-          <div class="grid grid-cols-3 gap-4">
+          <legend>1. المعلومات الأساسية</legend>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div><label>رقم الباركود</label><input type="text" id="barcodeId" readonly></div>
             <div><label>نوع النبات</label><input type="text" id="plantName" readonly></div>
             <div><label>الاسم العلمي</label><input type="text" id="scientificName" readonly></div>
           </div>
         </fieldset>
+
         <fieldset>
-            <legend>بيانات الجمع</legend>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="col-span-2">
-                    <label for="quantity">الكمية المجمعة *</label>
-                    <div class="flex"><input id="quantity" name="quantity" type="number" placeholder="0" required><select name="unit"><option>كيلو</option><option>جرام</option><option>لتر</option><option>قطعة</option></select></div>
-                </div>
-                <div class="col-span-2">
-                    <label for="qualityLevel">مستوى الجودة *</label>
-                    <select id="qualityLevel" name="qualityLevel" required><option>ممتاز</option><option>جيد جداً</option><option>جيد</option><option>متوسط</option><option>ضعيف</option></select>
+            <legend>2. تفاصيل الجمع</legend>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="quantity">الكمية *</label>
+                    <div class="flex"><input id="quantity" name="quantity" type="number" value="1" min="0.01" step="0.01" required><select name="unit"><option value="kg">كيلو</option><option value="g">جرام</option></select></div>
                 </div>
                 <div>
-                  <label for="locationName">موقع الجمع *</label>
-                  <input id="locationName" name="locationName" type="text" placeholder="مثال: وادي حنيفة" required>
+                    <label for="quality">الجودة *</label>
+                    <select id="quality" name="quality" required><option>ممتاز</option><option>جيد جداً</option><option>جيد</option><option>متوسط</option><option>ضعيف</option></select>
+                </div>
+                <div><label for="collectionDate">تاريخ الجمع *</label><input id="collectionDate" name="collectionDate" type="date" required></div>
+                <div><label for="collectionTime">وقت الجمع *</label><input id="collectionTime" name="collectionTime" type="time" required></div>
+            </div>
+          </fieldset>
+        
+          <fieldset>
+              <legend>3. معلومات الموقع</legend>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="location">اسم الموقع *</label>
+                  <input id="location" name="location" type="text" required>
                 </div>
                 <div>
-                  <label for="gpsCoordinates">الإحداثيات (GPS) *</label>
+                  <label for="gpsCoordinates">الإحداثيات (GPS)</label>
                   <div class="flex items-center gap-2">
-                    <input id="gpsCoordinates" name="gpsCoordinates" type="text" placeholder="24.7136, 46.6753" required>
+                    <input id="gpsCoordinates" name="gpsCoordinates" type="text" placeholder="24.7136, 46.6753">
                     <button type="button" id="getLocationBtn" class="btn btn-primary" style="flex-shrink: 0;">
                       <span id="location-icon-wrapper"></span>
                       <span>الموقع</span>
                     </button>
                   </div>
                 </div>
-                <div><label for="collectionDate">تاريخ الجمع *</label><input id="collectionDate" name="collectionDate" type="date" required></div>
-                <div><label for="collectionTime">وقت الجمع *</label><input id="collectionTime" name="collectionTime" type="time" required></div>
-            </div>
+                <div><label for="temperature">درجة الحرارة (مْ)</label><input id="temperature" name="temperature" type="number"></div>
+                <div><label for="weatherCondition">حالة الطقس</label><select id="weatherCondition" name="weatherCondition"><option>مشمس</option><option>غائم</option></select></div>
+              </div>
           </fieldset>
+
+          <fieldset>
+              <legend>4. فريق العمل والمعدات</legend>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label for="collector">اسم الجامع *</label><input id="collector" name="collector" type="text" required></div>
+                <div><label for="team">الفريق</label><input id="team" name="team" type="text"></div>
+                <div><label for="collectionMethod">طريقة الجمع</label><input id="collectionMethod" name="collectionMethod" type="text"></div>
+                <div><label for="seedMaturity">نضج البذور</label><input id="seedMaturity" name="seedMaturity" type="text"></div>
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium mb-2">المعدات المستخدمة</label>
+                  <div id="equipment-list" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+                </div>
+              </div>
+          </fieldset>
+
+          <fieldset>
+              <legend>5. الملاحظات</legend>
+              <div class="grid grid-cols-1 gap-4">
+                <div><label for="generalNotes">ملاحظات عامة</label><textarea id="generalNotes" name="generalNotes" rows="3"></textarea></div>
+                <div><label for="plantEnvironmentNotes">ملاحظات حول النبات والبيئة</label><textarea id="plantEnvironmentNotes" name="plantEnvironmentNotes" rows="3"></textarea></div>
+              </div>
+          </fieldset>
+
         <div class="flex justify-end items-center gap-4" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--color-border);">
           <div id="save-success-msg" class="hidden flex items-center gap-2 text-green font-semibold">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -129,9 +161,16 @@
 
 <script>
   // --- INJECTED DATA ---
-  const encodedData = 'eJyrVkpKLErOT0n1TFGyUnIKctY1szQzs1DSUSrIScwrAYtaJJmaGCcaGuimGVsk6ZpYmCTrWlgapOoamKWZJhoYGFoYmCTCNPgl5qYCtdzYdLPrxqqbHTfbgBLFyZmpeSWZaZnJUNn8nMyyVKVaAAbJKE0%3D';
+  const encodedData = 'eJyrVkpKLErOT0n1TFGyUnIKctY1NDe1NDU3tTAwNjQxVdJRKshJzCsBy1okmZoYJxoa6KYZWyTpmliYJOtaWBqk6hqYpZkmGhgYWhiYJMI0%2BCXmpgK13Nh0s%2BvGqpsdN9uAEsXJmal5JZlpmclQ2fyczLJUpVoA5Kwp5g%3D%3D';
   const supabaseUrl = 'https://taodxqtlkyhkupktliwv.supabase.co';
   const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhb2R4cXRsa3loa3Vwa3RsaXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDkxMjUsImV4cCI6MjA3NDY4NTEyNX0.3_Lolpx49GZJAai8I5qQRHpD8fXnuOGKJKEhHmXH9Ps';
+
+  // --- CONFIG ---
+  const EQUIPMENT_LIST = [
+    { id: 'collection_bags', name: 'أكياس جمع' }, { id: 'pruning_shears', name: 'مقص تقليم' },
+    { id: 'ladder', name: 'سلم' }, { id: 'collection_nets', name: 'شباك جمع' },
+    { id: 'gloves', name: 'قفازات' }, { id: 'storage_boxes', name: 'صناديق تخزين' },
+  ];
 
   // --- SVG ICONS ---
   const ICONS = {
@@ -193,8 +232,12 @@
       const d = item.data;
       const record = {
         barcode_id: d.barcodeId, plant_id: d.plantId, plant_type: d.plantName, scientific_name: d.scientificName,
-        quantity: d.quantity, unit: d.unit, quality: d.qualityLevel, collection_date: d.collectionDate,
-        collection_time: d.collectionTime, location: d.locationName, gps_coordinates: d.gpsCoordinates, status: 'قيد المعالجة',
+        quantity: d.quantity, unit: d.unit, quality: d.quality, collection_date: d.collectionDate,
+        collection_time: d.collectionTime, location: d.location, gps_coordinates: d.gpsCoordinates, 
+        temperature: d.temperature, weather_condition: d.weatherCondition, collector: d.collector,
+        team: d.team, collection_method: d.collectionMethod, seed_maturity: d.seedMaturity,
+        notes: `${d.generalNotes}\n${d.plantEnvironmentNotes}`.trim(),
+        status: 'قيد المعالجة',
       };
       
       try {
@@ -256,12 +299,24 @@
     const dataToSave = { ...baseData, collectedAt: new Date().toISOString() };
     for (const [key, value] of formData.entries()) { dataToSave[key] = value; }
 
+    const equipmentUsed = [];
+    document.querySelectorAll('#equipment-list input[type="checkbox"]').forEach(checkbox => {
+      if (checkbox.checked) {
+        equipmentUsed.push(checkbox.name);
+      }
+    });
+    dataToSave['equipmentUsed'] = equipmentUsed;
+
     try {
       await db.offlineCollections.add({ data: dataToSave, synced: false });
       saveSuccessMsg.classList.remove('hidden');
       form.reset();
+      // Reset defaults
       document.getElementById('collectionDate').value = new Date().toISOString().split('T')[0];
       document.getElementById('collectionTime').value = new Date().toTimeString().split(' ')[0].substring(0,5);
+      document.getElementById('quantity').value = '1';
+      document.getElementById('unit').value = 'kg';
+
       await updatePendingCount();
       setTimeout(() => saveSuccessMsg.classList.add('hidden'), 3000);
       if (isOnline) syncPendingCollections();
@@ -287,11 +342,38 @@
         getLocationBtn.disabled = false;
       },
       (error) => {
-        alert('لا يمكن الحصول على الموقع الحالي. يرجى إدخاله يدوياً.');
+        let errorMessage;
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'تم رفض إذن الوصول إلى الموقع.';
+            alert(errorMessage);
+            break;
+          case error.POSITION_UNAVAILABLE:
+            console.error("Location information is unavailable.");
+            break;
+          case error.TIMEOUT:
+             errorMessage = 'انتهت مهلة طلب الموقع. يرجى المحاولة مرة أخرى.';
+             alert(errorMessage);
+            break;
+        }
+        console.error('Geolocation Error:', error.message);
         locationIconWrapper.innerHTML = ICONS.mapPin;
         getLocationBtn.disabled = false;
-      }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+  }
+  
+  function renderEquipment() {
+    const container = document.getElementById('equipment-list');
+    EQUIPMENT_LIST.forEach(equip => {
+      container.innerHTML += `
+        <div class="flex items-center gap-2" style="border: 1px solid var(--color-border); padding: 0.75rem; border-radius: 0.5rem;">
+          <input type="checkbox" id="equip-${equip.id}" name="${equip.id}" style="width: 1rem; height: 1rem;">
+          <label for="equip-${equip.id}" style="font-weight: 500;">${equip.name}</label>
+        </div>
+      `;
+    });
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
@@ -315,6 +397,7 @@
     getLocationBtn = document.getElementById('getLocationBtn');
     locationIconWrapper = document.getElementById('location-icon-wrapper');
     locationIconWrapper.innerHTML = ICONS.mapPin;
+    renderEquipment();
     
     try {
       baseData = decodeData(encodedData);
