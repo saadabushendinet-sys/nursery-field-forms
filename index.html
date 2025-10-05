@@ -206,7 +206,7 @@
     spinner: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 animate-spin"><line x1="12" x2="12" y1="2" y2="6"/><line x1="12" x2="12" y1="18" y2="22"/><line x1="4.93" x2="7.76" y1="4.93" y2="7.76"/><line x1="16.24" x2="19.07" y1="16.24" y2="19.07"/><line x1="2" x2="6" y1="12" y2="12"/><line x1="18" x2="22" y1="12" y2="12"/><line x1="4.93" x2="7.76" y1="19.07" y2="16.24"/><line x1="16.24" x2="19.07" y1="7.76" y2="4.93"/></svg>',
     refresh: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M3 2v6h6"/><path d="M21 12A9 9 0 0 0 6 5.3L3 8"/><path d="M21 22v-6h-6"/><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"/></svg>',
     mapPin: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
-    synced: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+    synced: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--color-green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
     pending: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>',
   };
 
@@ -300,6 +300,10 @@
         const itemEl = document.createElement('div');
         itemEl.className = 'local-record-item';
         itemEl.style.cursor = 'pointer';
+        if (record.synced) {
+            itemEl.style.backgroundColor = '#f0fdf4';
+            itemEl.style.borderColor = 'var(--color-green)';
+        }
         itemEl.innerHTML = `<div><p class="font-semibold">${d.plantName || 'N/A'} - ${d.quantity || 'N/A'} ${d.unit || ''}</p><p style="font-size: 0.75rem; color: var(--color-text-muted);">وقت الحفظ: ${displayDate} ${displayTime}</p></div><div class="status-badge ${statusBadgeClass}">${statusIcon}<span>${statusText}</span></div>`;
         itemEl.addEventListener('click', function() { populateFormFromRecord(d); });
         listContainer.appendChild(itemEl);
@@ -323,7 +327,7 @@
   async function syncPendingCollections() {
     if (!isOnline || isSyncing) return;
     
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    if (SUPABASE_URL === '__SUPABASE_URL__' || SUPABASE_ANON_KEY === '__SUPABASE_ANON_KEY__') {
       console.log("Supabase sync is not configured. Skipping sync.");
       setStatusMessage('مزامنة Supabase غير مهيأة.', 'info');
       return;
@@ -388,7 +392,7 @@ ${equipmentUsed.length > 0 ? 'المعدات المستخدمة: ' + equipmentUs
         const response = await fetch(url, {
           method: 'POST',
           headers: headers,
-          body: JSON.stringify(record),
+          body: JSON.stringify([record]), // FIX: Send as an array of records
         });
 
         if (!response.ok) {
@@ -401,8 +405,12 @@ ${equipmentUsed.length > 0 ? 'المعدات المستخدمة: ' + equipmentUs
         }
       }
       lastSync = new Date();
-      if (successCount > 0) {
-          setStatusMessage(`تمت مزامنة ${successCount} سجل بنجاح!`, 'success');
+      if (unsynced.length > 0) {
+        if (successCount > 0) {
+            setStatusMessage(`تمت مزامنة ${successCount} من ${unsynced.length} سجل بنجاح!`, 'success');
+        } else {
+            setStatusMessage('فشل المزامنة. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.', 'error');
+        }
       }
     } catch (e) {
       console.error("Error during Supabase sync:", e);
