@@ -93,22 +93,6 @@
       </div>
     </div>
     
-     <div class="card mb-6">
-        <div id="github-settings-toggle" style="padding: 1.5rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-            <h2 style="margin: 0; font-size: 1.25rem; font-weight: 600;">إعدادات مزامنة GitHub</h2>
-            <svg id="github-chevron" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s;"><path d="m6 9 6 6 6-6"/></svg>
-        </div>
-        <div id="github-settings-container" style="padding: 0 1.5rem 1.5rem; display: none; border-top: 1px solid var(--color-border);">
-            <div style="padding-top: 1.5rem;" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label for="githubUsername">اسم مستخدم GitHub</label><input id="githubUsername" type="text"></div>
-                <div><label for="githubRepo">اسم المستودع (Repo)</label><input id="githubRepo" type="text"></div>
-                <div class="md:col-span-2"><label for="githubToken">Token الوصول الشخصي</label><input id="githubToken" type="password"></div>
-                <div class="md:col-span-2"><label for="githubPath">مسار الملف</label><input id="githubPath" type="text" value="collected_data.json"></div>
-                <div class="md:col-span-2 flex items-center gap-2"><input id="enableGithubSync" type="checkbox" style="width: auto;"><label for="enableGithubSync" style="margin-bottom: 0;">تفعيل المزامنة مع GitHub عند الحفظ</label></div>
-            </div>
-        </div>
-    </div>
-    
     <div class="card p-6">
       <h1>نموذج جمع ميداني</h1>
       <p class="mb-6">قم بتعبئة الحقول التالية ثم اضغط على "حفظ البيانات" لحفظ المعلومات محلياً.</p>
@@ -214,7 +198,6 @@
     { id: 'ladder', name: 'سلم' }, { id: 'collection_nets', name: 'شباك جمع' },
     { id: 'gloves', name: 'قفازات' }, { id: 'storage_boxes', name: 'صناديق تخزين' },
   ];
-  const GITHUB_API_URL = 'https://api.github.com';
 
   // --- SVG ICONS ---
   const ICONS = {
@@ -236,12 +219,14 @@
   let db;
 
   // --- UI ELEMENTS ---
-  let form, formContainer, errorContainer, errorMessage, syncHeader, statusMessageArea, getLocationBtn, locationIconWrapper, recordsToggle, recordsContainer, recordsChevron, clearSyncedBtn, githubToggle, githubContainer, githubChevron;
+  let form, formContainer, errorContainer, errorMessage, syncHeader, statusMessageArea, getLocationBtn, locationIconWrapper, recordsToggle, recordsContainer, recordsChevron, clearSyncedBtn;
   
   function setStatusMessage(message, type = 'success') {
-    const color = type === 'success' ? 'var(--color-green)' : 'var(--color-red)';
+    const color = type === 'success' ? 'var(--color-green)' : type === 'error' ? 'var(--color-red)' : 'var(--color-text-muted)';
     statusMessageArea.innerHTML = `<span style="color: ${color}; font-weight: 500;">${message}</span>`;
-    setTimeout(() => { statusMessageArea.innerHTML = ''; }, 4000);
+    if (type !== 'info') {
+      setTimeout(() => { statusMessageArea.innerHTML = ''; }, 4000);
+    }
   }
 
   function showError(message) {
@@ -375,55 +360,6 @@
     document.getElementById('syncNowBtn').addEventListener('click', syncPendingCollections);
   }
 
-  async function syncToGitHub(newRecord) {
-    const username = document.getElementById('githubUsername').value;
-    const repo = document.getElementById('githubRepo').value;
-    const token = document.getElementById('githubToken').value;
-    const path = document.getElementById('githubPath').value;
-    if (!username || !repo || !token || !path) {
-      setStatusMessage('الرجاء تعبئة جميع حقول إعدادات GitHub.', 'error');
-      return;
-    }
-    setStatusMessage('جاري المزامنة مع GitHub...', 'info');
-
-    const url = `${GITHUB_API_URL}/repos/${username}/${repo}/contents/${path}`;
-    const headers = { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' };
-    
-    try {
-      let existingData = [];
-      let sha;
-      const getResponse = await fetch(url, { headers });
-      if (getResponse.ok) {
-        const fileData = await getResponse.json();
-        sha = fileData.sha;
-        const decodedContent = atob(fileData.content);
-        existingData = JSON.parse(decodedContent);
-      } else if (getResponse.status !== 404) {
-        const errorData = await getResponse.json();
-        throw new Error(`فشل جلب الملف: ${errorData.message}`);
-      }
-
-      existingData.push(newRecord);
-      const updatedContent = JSON.stringify(existingData, null, 2);
-      
-      const body = {
-        message: `Add collection data for ${newRecord.plantName}`,
-        content: btoa(unescape(encodeURIComponent(updatedContent))),
-        sha: sha
-      };
-
-      const putResponse = await fetch(url, { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (!putResponse.ok) {
-        const errorData = await putResponse.json();
-        throw new Error(`فشل رفع الملف: ${errorData.message}`);
-      }
-      setStatusMessage('تمت المزامنة مع GitHub بنجاح!', 'success');
-    } catch (e) {
-      console.error('GitHub Sync Error:', e);
-      setStatusMessage(`خطأ في مزامنة GitHub: ${e.message}`, 'error');
-    }
-  }
-
   async function handleFormSubmit(event) {
     event.preventDefault();
     if (!form.checkValidity()) {
@@ -455,12 +391,10 @@
       await updatePendingCount();
       await renderLocalRecords();
       
-      const enableGithub = document.getElementById('enableGithubSync').checked;
-      if (enableGithub && isOnline) {
-        await syncToGitHub(dataToSave);
+      // Auto-sync to Supabase if online
+      if (isOnline) {
+        syncPendingCollections();
       }
-
-      if (isOnline) syncPendingCollections();
     } catch (e) {
       console.error("Failed to save to IndexedDB", e);
       setStatusMessage("فشل حفظ البيانات محلياً.", 'error');
@@ -535,7 +469,6 @@
       errorMessage = document.getElementById('error-message'); syncHeader = document.getElementById('sync-status-header'); statusMessageArea = document.getElementById('status-message-area');
       getLocationBtn = document.getElementById('getLocationBtn'); locationIconWrapper = document.getElementById('location-icon-wrapper'); recordsToggle = document.getElementById('local-records-toggle');
       recordsContainer = document.getElementById('local-records-container'); recordsChevron = document.getElementById('records-chevron'); clearSyncedBtn = document.getElementById('clearSyncedBtn');
-      githubToggle = document.getElementById('github-settings-toggle'); githubContainer = document.getElementById('github-settings-container'); githubChevron = document.getElementById('github-chevron');
 
       locationIconWrapper.innerHTML = ICONS.mapPin; renderEquipment();
       
@@ -552,11 +485,6 @@
         const isHidden = recordsContainer.style.display === 'none';
         recordsContainer.style.display = isHidden ? 'block' : 'none';
         recordsChevron.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
-      });
-      githubToggle.addEventListener('click', () => {
-        const isHidden = githubContainer.style.display === 'none';
-        githubContainer.style.display = isHidden ? 'block' : 'none';
-        githubChevron.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
       });
 
       clearSyncedBtn.addEventListener('click', handleClearSynced);
