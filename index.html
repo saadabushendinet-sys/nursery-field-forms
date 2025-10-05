@@ -96,10 +96,11 @@
       <form id="collectionForm">
         <fieldset>
           <legend>1. المعلومات الأساسية</legend>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><label>رقم الباركود</label><input type="text" id="barcodeId" readonly></div>
             <div><label>نوع النبات</label><input type="text" id="plantName" readonly></div>
             <div><label>الاسم العلمي</label><input type="text" id="scientificName" readonly></div>
+            <div><label>تم إنشاؤه بواسطة</label><input type="text" id="userEmail" readonly></div>
           </div>
         </fieldset>
 
@@ -187,7 +188,7 @@
 
 <script>
   // --- INJECTED DATA ---
-  const encodedData = 'eJyrVkpKLErOT0n1TFGyUnIKctY1NDe1NDU3tTAwNjQxVdJRKshJzCsBy1okmZoYJxoa6KYZWyTpmliYJOtaWBqk6hqYpZkmGhgYWhiYJMI0%2BCXmpgK13Nh0s%2BvGqpsdN9uAEsXJmal5JZlpmclQ2fyczLJUpVoA5Kwp5g%3D%3D';
+  const encodedData = 'eJw1zT1uwkAQhuG7bJ1Bs9kde50KgShoKLjB7O4YVvIPsg0Noo0ijpIyp8G3iWM57Tzz6rsrz11oo%2Byj%2BlCb4xZ0TgXl5NBoS%2BpNXSpuhlmdJ2tYI5TGebDOBnAFCmBWEiNqh5b%2FgwPXMiWvn%2FH5%2Bh6%2Fxs8J%2BpCkGVKZwqJtlW4ywbWXbl4onEXKOIN3bSLYwBo8lwKkAwbjSXIXl%2F9dzamakp45rthf%2B7M0Ma1Pf%2BdVaGv1%2BAVXDUSg';
   const supabaseUrl = 'https://taodxqtlkyhkupktliwv.supabase.co';
   const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhb2R4cXRsa3loa3Vwa3RsaXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDkxMjUsImV4cCI6MjA3NDY4NTEyNX0.3_Lolpx49GZJAai8I5qQRHpD8fXnuOGKJKEhHmXH9Ps';
 
@@ -298,6 +299,7 @@
     for (const item of unsynced) {
       const d = item.data;
       const record = {
+        user_id: d.userId, // Link to the user
         barcode_id: d.barcodeId, plant_id: d.plantId, plant_type: d.plantName, scientific_name: d.scientificName,
         quantity: d.quantity ? parseFloat(d.quantity) : null, 
         unit: d.unit, 
@@ -520,6 +522,7 @@
       document.getElementById('barcodeId').value = baseData.barcodeId;
       document.getElementById('plantName').value = baseData.plantName;
       document.getElementById('scientificName').value = baseData.scientificName;
+      document.getElementById('userEmail').value = baseData.userEmail || 'غير معروف';
       
       document.getElementById('collectionDate').value = new Date().toISOString().split('T')[0];
       document.getElementById('collectionTime').value = new Date().toTimeString().split(' ')[0].substring(0,5);
