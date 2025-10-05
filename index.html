@@ -12,6 +12,7 @@
       --color-bg: #f3f4f6; --color-surface: #ffffff; --color-text: #1f2937;
       --color-text-muted: #6b7280; --color-border: #e5e7eb; --color-primary: #3b82f6;
       --color-primary-hover: #2563eb; --color-green: #16a34a; --color-red: #dc2626;
+      --color-yellow: #f59e0b;
     }
     body {
       font-family: system-ui, -apple-system, sans-serif;
@@ -23,6 +24,7 @@
     .p-6 { padding: 1.5rem; }
     .mb-6 { margin-bottom: 1.5rem; }
     h1 { font-size: 1.5rem; line-height: 2rem; font-weight: 700; }
+    h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; }
     p { color: var(--color-text-muted); }
     .grid { display: grid; gap: 1rem; }
     .grid-cols-1 { grid-template-columns: 1fr; }
@@ -55,10 +57,16 @@
     .w-6 { width: 1.5rem; } .h-6 { height: 1.5rem; }
     .animate-spin { animation: spin 1s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    .text-green { color: var(--color-green); } .text-red { color: var(--color-red); }
+    .text-green { color: var(--color-green); } .text-red { color: var(--color-red); } .text-yellow { color: var(--color-yellow); }
+    .bg-green-light { background-color: #dcfce7; } .text-green-dark { color: #166534; }
+    .bg-yellow-light { background-color: #fef9c3; } .text-yellow-dark { color: #854d0e; }
     .font-semibold { font-weight: 600; }
     fieldset { border: none; border-top: 1px solid var(--color-border); padding: 1.5rem 0 0 0; margin-top: 1.5rem; }
     legend { font-size: 1.125rem; font-weight: 600; padding: 0 0.5rem; margin-right: -0.5rem; }
+    .local-record-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 0.5rem; }
+    .local-record-item + .local-record-item { margin-top: 0.75rem; }
+    .status-badge { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
+    .status-badge svg { width: 0.875rem; height: 0.875rem; }
     @media (min-width: 768px) {
       .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .md\:col-span-2 { grid-column: span 2 / span 2; }
@@ -156,6 +164,13 @@
         </div>
       </form>
     </div>
+
+    <div class="card p-6" style="margin-top: 1.5rem;">
+        <h2>السجلات المحفوظة محلياً</h2>
+        <div id="local-records-list">
+            <p style="text-align: center; color: var(--color-text-muted); padding: 1rem 0;">جاري تحميل السجلات...</p>
+        </div>
+    </div>
   </div>
   <div id="error-container" class="hidden card p-6 text-center" style="text-align: center;">
       <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: auto; margin-bottom: 1rem;" class="text-red"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
@@ -184,6 +199,8 @@
     spinner: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 animate-spin"><line x1="12" x2="12" y1="2" y2="6"/><line x1="12" x2="12" y1="18" y2="22"/><line x1="4.93" x2="7.76" y1="4.93" y2="7.76"/><line x1="16.24" x2="19.07" y1="16.24" y2="19.07"/><line x1="2" x2="6" y1="12" y2="12"/><line x1="18" x2="22" y1="12" y2="12"/><line x1="4.93" x2="7.76" y1="19.07" y2="16.24"/><line x1="16.24" x2="19.07" y1="7.76" y2="4.93"/></svg>',
     refresh: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M3 2v6h6"/><path d="M21 12A9 9 0 0 0 6 5.3L3 8"/><path d="M21 22v-6h-6"/><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"/></svg>',
     mapPin: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+    synced: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+    pending: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>',
   };
 
   // --- GLOBAL STATE ---
@@ -218,6 +235,44 @@
     pendingCount = await db.offlineCollections.where('synced').equals(0).count();
     updateSyncUI();
   }
+  
+  async function renderLocalRecords() {
+    const listContainer = document.getElementById('local-records-list');
+    if (!listContainer) return;
+    listContainer.innerHTML = '<p>جاري تحميل السجلات...</p>';
+
+    try {
+      const records = await db.offlineCollections.orderBy('id').reverse().toArray();
+      if (records.length === 0) {
+        listContainer.innerHTML = '<p style="text-align: center; color: var(--color-text-muted); padding: 1rem 0;">لا توجد سجلات محفوظة محلياً.</p>';
+        return;
+      }
+
+      listContainer.innerHTML = records.map(function(record) {
+        const d = record.data;
+        const statusIcon = record.synced ? ICONS.synced : ICONS.pending;
+        const statusText = record.synced ? 'تمت المزامنة' : 'بانتظار المزامنة';
+        const statusBadgeClass = record.synced ? 'bg-green-light text-green-dark' : 'bg-yellow-light text-yellow-dark';
+
+        return (
+          '<div class="local-record-item">' +
+            '<div>' +
+              '<p class="font-semibold">' + (d.plantName || 'N/A') + '</p>' +
+              '<p style="font-size: 0.75rem; color: var(--color-text-muted);">' + (d.collectionDate || 'N/A') + ' - ' + (d.quantity || 'N/A') + ' ' + (d.unit || '') + '</p>' +
+            '</div>' +
+            '<div class="status-badge ' + statusBadgeClass + '">' +
+              statusIcon + '<span>' + statusText + '</span>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+
+    } catch (e) {
+      console.error('Failed to render local records:', e);
+      listContainer.innerHTML = '<p class="text-red">فشل تحميل السجلات المحفوظة.</p>';
+    }
+  }
+
 
   async function syncPendingCollections() {
     if (!isOnline || isSyncing) return;
@@ -230,6 +285,7 @@
       isSyncing = false;
       lastSync = new Date();
       updateSyncUI();
+      renderLocalRecords(); // Refresh list to show all synced
       return;
     }
 
@@ -271,13 +327,14 @@
         }
       } catch (e) {
         console.error('Network error during sync:', e);
-        break;
+        break; // Stop syncing on network error
       }
     }
     
     isSyncing = false;
     lastSync = new Date();
     await updatePendingCount();
+    await renderLocalRecords();
   }
   
   function updateSyncUI() {
@@ -318,7 +375,7 @@
     for (const [key, value] of formData.entries()) { dataToSave[key] = value; }
 
     const equipmentUsed = [];
-    document.querySelectorAll('#equipment-list input[type="checkbox"]').forEach(checkbox => {
+    document.querySelectorAll('#equipment-list input[type="checkbox"]').forEach(function(checkbox) {
       if (checkbox.checked) {
         equipmentUsed.push(checkbox.name);
       }
@@ -336,11 +393,12 @@
       document.getElementById('unit').value = 'kg';
 
       await updatePendingCount();
-      setTimeout(() => saveSuccessMsg.classList.add('hidden'), 3000);
+      await renderLocalRecords();
+      setTimeout(function() { saveSuccessMsg.classList.add('hidden') }, 3000);
       if (isOnline) syncPendingCollections();
     } catch (e) {
       console.error("Failed to save to IndexedDB", e);
-      alert("فشل حفظ البيانات محلياً.");
+      alert("فشل حفظ البيانات محلياً. يرجى التحقق من وحدة التحكم لمزيد من التفاصيل.");
     }
   }
   
@@ -415,7 +473,7 @@
   
   function renderEquipment() {
     const container = document.getElementById('equipment-list');
-    EQUIPMENT_LIST.forEach(equip => {
+    EQUIPMENT_LIST.forEach(function(equip) {
       container.innerHTML += 
         '<div class="flex items-center gap-2" style="border: 1px solid var(--color-border); padding: 0.75rem; border-radius: 0.5rem;">' +
           '<input type="checkbox" id="equip-' + equip.id + '" name="' + equip.id + '" style="width: 1rem; height: 1rem;">' +
@@ -425,49 +483,49 @@
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
-    // Check for required libraries
-    if (typeof pako === 'undefined' || typeof Dexie === 'undefined') {
-      showError('فشل تحميل المكتبات الأساسية. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.');
-      return;
-    }
-    
-    // --- DATABASE SETUP ---
-    db = new Dexie('NurseryDB');
-    db.version(1).stores({ offlineCollections: '++id, synced, *data.barcodeId' });
-
-    // Assign UI elements
-    form = document.getElementById('collectionForm');
-    formContainer = document.getElementById('form-container');
-    errorContainer = document.getElementById('error-container');
-    errorMessage = document.getElementById('error-message');
-    syncHeader = document.getElementById('sync-status-header');
-    saveSuccessMsg = document.getElementById('save-success-msg');
-    getLocationBtn = document.getElementById('getLocationBtn');
-    locationIconWrapper = document.getElementById('location-icon-wrapper');
-    locationIconWrapper.innerHTML = ICONS.mapPin;
-    renderEquipment();
-    
     try {
+      // Check for required libraries
+      if (typeof pako === 'undefined' || typeof Dexie === 'undefined') {
+        showError('فشل تحميل المكتبات الأساسية. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.');
+        return;
+      }
+      
+      // --- DATABASE SETUP ---
+      db = new Dexie('NurseryDB');
+      db.version(1).stores({ offlineCollections: '++id, synced, *data.barcodeId' });
+
+      // Assign UI elements
+      form = document.getElementById('collectionForm');
+      formContainer = document.getElementById('form-container');
+      errorContainer = document.getElementById('error-container');
+      errorMessage = document.getElementById('error-message');
+      syncHeader = document.getElementById('sync-status-header');
+      saveSuccessMsg = document.getElementById('save-success-msg');
+      getLocationBtn = document.getElementById('getLocationBtn');
+      locationIconWrapper = document.getElementById('location-icon-wrapper');
+      locationIconWrapper.innerHTML = ICONS.mapPin;
+      renderEquipment();
+      
       baseData = decodeData(encodedData);
       document.getElementById('barcodeId').value = baseData.barcodeId;
       document.getElementById('plantName').value = baseData.plantName;
       document.getElementById('scientificName').value = baseData.scientificName;
+      
+      document.getElementById('collectionDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('collectionTime').value = new Date().toTimeString().split(' ')[0].substring(0,5);
+
+      await updatePendingCount();
+      await renderLocalRecords();
+      if (isOnline) syncPendingCollections();
+
+      form.addEventListener('submit', handleFormSubmit);
+      getLocationBtn.addEventListener('click', handleGetLocation);
+      window.addEventListener('online', () => { isOnline = true; updateSyncUI(); syncPendingCollections(); });
+      window.addEventListener('offline', () => { isOnline = false; updateSyncUI(); });
     } catch (e) {
-      showError('فشل في فك تشفير بيانات النموذج. قد يكون الرابط تالفاً.');
-      console.error('Form render error:', e);
-      return;
+        showError('حدث خطأ غير متوقع أثناء تهيئة الصفحة: ' + e.message);
+        console.error('Initialization error:', e);
     }
-    
-    document.getElementById('collectionDate').value = new Date().toISOString().split('T')[0];
-    document.getElementById('collectionTime').value = new Date().toTimeString().split(' ')[0].substring(0,5);
-
-    await updatePendingCount();
-    if (isOnline) syncPendingCollections();
-
-    form.addEventListener('submit', handleFormSubmit);
-    getLocationBtn.addEventListener('click', handleGetLocation);
-    window.addEventListener('online', () => { isOnline = true; updateSyncUI(); syncPendingCollections(); });
-    window.addEventListener('offline', () => { isOnline = false; updateSyncUI(); });
   });
 </script>
 </body>
